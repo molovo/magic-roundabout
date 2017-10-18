@@ -6,3 +6,4 @@ Makefile
 yarn.lock
 dist/
 src/
+gulpfile.babel.js
