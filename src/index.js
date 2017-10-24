@@ -97,11 +97,13 @@ export default class MagicRoundabout {
       i = this.slides.length
     }
 
-    fn = i === 1 ? 'add' : 'remove'
-    this.buttons.prev.classList[fn]('slideshow__button--disabled')
+    if (this.opts.buttons) {
+      fn = i === 1 ? 'add' : 'remove'
+      this.buttons.prev.classList[fn]('slideshow__button--disabled')
 
-    fn = i === this.slides.length ? 'add' : 'remove'
-    this.buttons.next.classList[fn]('slideshow__button--disabled')
+      fn = i === this.slides.length ? 'add' : 'remove'
+      this.buttons.next.classList[fn]('slideshow__button--disabled')
+    }
 
     this._current = i - 1
     this.transition()
