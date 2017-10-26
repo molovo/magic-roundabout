@@ -177,6 +177,7 @@ export default class MagicRoundabout {
   @bind
   setContainerSize () {
     this.width = this.container.clientWidth
+    this.transition()
   }
 
   /**
