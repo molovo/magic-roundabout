@@ -14,14 +14,23 @@ npm install magic-roundabout
 import MagicRoundabout from 'magic-roundabout'
 
 const magicRoundabout = new MagicRoundabout('#your-element', {
+  // Whether the slider should autoplay
+  auto: false,
+
   // Whether next/previous buttons are in the container
   buttons: true,
 
   // If true, clicking a slide will transition to it
   click: true,
 
+  // When auto == true, the time between transitions
+  delay: 10000,
+
   // If true, the arrow keys will control the slider while it is in the viewport
   keys: true,
+
+  // Whether the slider should return to the start when at the end
+  loop: true,
 
   // A function which is fired when the current slide changes
   onChange: (magicRoundabout) => {},
