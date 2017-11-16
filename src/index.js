@@ -10,9 +10,12 @@ export default class MagicRoundabout {
    * @type {object}
    */
   opts = {
+    auto: false,
     buttons: true,
     click: true,
+    delay: 10000,
     keys: true,
+    loop: true,
     onChange: () => {},
     touch: true,
     scroll: true,
@@ -88,16 +91,26 @@ export default class MagicRoundabout {
    */
   set current (i) {
     let fn
+    clearTimeout(this.auto)
+    i = parseInt(i)
 
-    if (i <= 1) {
-      i = 1
+    if (i < 1) {
+      if (this.opts.loop) {
+        i = this.slides.length
+      } else {
+        i = 1
+      }
     }
 
-    if (i >= this.slides.length) {
-      i = this.slides.length
+    if (i > this.slides.length) {
+      if (this.opts.loop) {
+        i = 1
+      } else {
+        i = this.slides.length
+      }
     }
 
-    if (this.opts.buttons) {
+    if (this.opts.buttons && !this.opts.loop) {
       fn = i === 1 ? 'add' : 'remove'
       this.buttons.prev.classList[fn]('slideshow__button--disabled')
 
@@ -124,6 +137,12 @@ export default class MagicRoundabout {
 
     if (this.slides[this._current + 1]) {
       this.slides[this._current + 1].classList.add('slideshow__slide--next')
+    }
+
+    if (this.opts.auto) {
+      this.auto = setTimeout(() => {
+        this.current = this.current + 1
+      }, this.opts.delay)
     }
   }
 
