@@ -360,7 +360,7 @@ export default class MagicRoundabout {
   getOuterWidth (el) {
     const style = window.getComputedStyle(el)
 
-    return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight)
+    return parseFloat(el.getBoundingClientRect().width) + parseFloat(style.marginLeft) + parseFloat(style.marginRight)
   }
 
   /**
@@ -373,7 +373,7 @@ export default class MagicRoundabout {
   getOuterHeight (el) {
     const style = window.getComputedStyle(el)
 
-    return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom)
+    return parseFloat(el.getBoundingClientRect().height) + parseFloat(style.marginTop) + parseFloat(style.marginBottom)
   }
 
   /**
