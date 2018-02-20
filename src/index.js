@@ -16,6 +16,7 @@ export default class MagicRoundabout {
     click: true,
     delay: 10000,
     keys: true,
+    limit: false,
     loop: true,
     onChange: () => {},
     touch: true,
@@ -346,14 +347,31 @@ export default class MagicRoundabout {
 
     let offset = 0
     for (var i = 0; i < this._current; i++) {
-      offset += size(this.slides[i]) * -1
+      offset += size(this.slides[i])
     }
 
-    if (this.opts.center) {
+    if (this.opts.center && !this.opts.limit) {
       offset = offset + (size(this.container) / 2) - (innerSize(this.slides[this._current]) / 2)
     }
 
-    this.wrapper.style.transform = `${axis}(${offset}px)`
+    if (this.opts.limit && !this.opts.loop) {
+      let total = 0
+      for (var k = 0; k < this.slides.length; k++) {
+        total += size(this.slides[k])
+      }
+
+      offset = Math.min(offset, total - this.container.clientWidth)
+
+      if (offset >= total - this.container.clientWidth) {
+        if (this.opts.buttons) {
+          this.buttons.next.classList.add('slideshow__button--disabled')
+        } else {
+          this.buttons.next.classList.remove('slideshow__button--disabled')
+        }
+      }
+    }
+
+    this.wrapper.style.transform = `${axis}(${offset * -1}px)`
   }
 
   /**
