@@ -12,6 +12,7 @@ export default class MagicRoundabout {
   opts = {
     auto: false,
     buttons: true,
+    center: false,
     click: true,
     delay: 10000,
     keys: true,
@@ -341,10 +342,15 @@ export default class MagicRoundabout {
   transition () {
     const axis = this.opts.vertical ? 'translateY' : 'translateX'
     const size = this.opts.vertical ? this.getOuterHeight : this.getOuterWidth
+    const innerSize = this.opts.vertical ? this.getInnerHeight : this.getInnerWidth
 
     let offset = 0
     for (var i = 0; i < this._current; i++) {
       offset += size(this.slides[i]) * -1
+    }
+
+    if (this.opts.center) {
+      offset = offset + (size(this.container) / 2) - (innerSize(this.slides[this._current]) / 2)
     }
 
     this.wrapper.style.transform = `${axis}(${offset}px)`
@@ -355,12 +361,13 @@ export default class MagicRoundabout {
    *
    * @param {HTMLElement} el
    *
-   * @return {int}
+   * @return {float}
    */
-  getOuterWidth (el) {
+  @bind
+  getOuterWidth(el) {
     const style = window.getComputedStyle(el)
 
-    return parseFloat(el.getBoundingClientRect().width) + parseFloat(style.marginLeft) + parseFloat(style.marginRight)
+    return this.getInnerWidth(el) + parseFloat(style.marginLeft) + parseFloat(style.marginRight)
   }
 
   /**
@@ -368,12 +375,37 @@ export default class MagicRoundabout {
    *
    * @param {HTMLElement} el
    * 
-   * @return {int}
+   * @return {float}
    */
-  getOuterHeight (el) {
+  @bind
+  getOuterHeight(el) {
     const style = window.getComputedStyle(el)
 
-    return parseFloat(el.getBoundingClientRect().height) + parseFloat(style.marginTop) + parseFloat(style.marginBottom)
+    return this.getInnerHeight(el) + parseFloat(style.marginTop) + parseFloat(style.marginBottom)
+  }
+
+  /**
+   * Get the width of an element including padding, border and margin
+   *
+   * @param {HTMLElement} el
+   *
+   * @return {float}
+   */
+  @bind
+  getInnerWidth(el) {
+    return parseFloat(el.getBoundingClientRect().width)
+  }
+
+  /**
+   * Get the height of an element including padding, border and margin
+   *
+   * @param {HTMLElement} el
+   *
+   * @return {float}
+   */
+  @bind
+  getInnerHeight(el) {
+    return parseFloat(el.getBoundingClientRect().height)
   }
 
   /**
