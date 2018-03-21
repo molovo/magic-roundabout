@@ -15,12 +15,15 @@ export default class MagicRoundabout {
     center: false,
     click: true,
     delay: 10000,
+    duplicateSlidesWhenLooping: false,
+    duplicateSlidesCount: 2,
     keys: true,
     limit: false,
     loop: true,
     onChange: () => {},
     touch: true,
     scroll: true,
+    slidesPerView: 1,
     vertical: false
   }
 
@@ -63,7 +66,21 @@ export default class MagicRoundabout {
 
     this.container = target
     this.wrapper = this.container.querySelector('.slideshow__slides')
-    this.slides = this.container.querySelectorAll('.slideshow__slide')
+    this.slides = Array.from(this.container.querySelectorAll('.slideshow__slide'))
+
+    if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+      this.duplicatesAppend = this.slides.slice(0, this.opts.duplicateSlidesCount).map(slide => slide.cloneNode(true))
+      this.duplicatesAppend.forEach(duplicate => {
+        duplicate.classList.add('slideshow__slide--duplicate')
+        this.wrapper.appendChild(duplicate)
+      })
+
+      this.duplicatesPrepend = this.slides.slice(0 - this.opts.duplicateSlidesCount).map(slide => slide.cloneNode(true))
+      this.duplicatesPrepend.reverse().forEach(duplicate => {
+        duplicate.classList.add('slideshow__slide--duplicate')
+        this.wrapper.insertBefore(duplicate, this.wrapper.childNodes[0])
+      })
+    }
 
     if (this.opts.buttons) {
       this.buttons = {}
@@ -95,20 +112,29 @@ export default class MagicRoundabout {
     let fn
     clearTimeout(this.auto)
     i = parseInt(i)
+    i = i - ((i - 1) % this.opts.slidesPerView)
 
     if (i < 1) {
       if (this.opts.loop) {
-        i = this.slides.length
+        if (!this.opts.duplicateSlidesWhenLooping) {
+          i = this.slides.length - this.opts.slidesPerView + 1
+        } else {
+          this.changeInstantly(this.slides.length)
+        }
       } else {
         i = 1
       }
     }
 
-    if (i > this.slides.length) {
+    if (i > this.slides.length - (i % this.opts.slidesPerView)) {
       if (this.opts.loop) {
-        i = 1
+        if (!this.opts.duplicateSlidesWhenLooping) {
+          i = 1
+        } else {
+          this.changeInstantly(1)
+        }
       } else {
-        i = this.slides.length
+        i = this.slides.length - (i % this.opts.slidesPerView)
       }
     }
 
@@ -121,31 +147,110 @@ export default class MagicRoundabout {
     }
 
     this._current = i - 1
+    console.log(this._current)
     this.transition()
 
     this.opts.onChange(this)
 
-    this.slides.forEach(slide => {
+    this.clearState(this.slides)
+    this.clearState(this.duplicatesAppend)
+    this.clearState(this.duplicatesPrepend)
+
+    let x = this.current
+    this.slides.slice(this._current, this._current + this.opts.slidesPerView).forEach(slide => {
+      console.log(slide)
+      slide.classList.add('slideshow__slide--active')
+    })
+
+    if (this._current >= 0) {
+      this.duplicatesAppend.slice(this._current, this._current + this.opts.slidesPerView).forEach(slide => {
+        slide.classList.add('slideshow__slide--active')
+      })
+
+      let offset = this.duplicatesPrepend.length - this.slides.length + this._current
+      this.duplicatesPrepend.slice(Math.max(offset, 0), Math.max(offset + this.opts.slidesPerView, 0)).forEach(slide => {
+        slide.classList.add('slideshow__slide--active')
+      })
+    }
+
+    // const currentDuplicatedSlides = this.duplicatesAppend.slice(this._current - this.slides.length, this.slidesPerView)
+    // if (currentDuplicatedSlides.length > 0) {
+    //   currentDuplicatedSlides.forEach(slide => {
+    //     slide.classList.add('slideshow__slide--active')
+    //   })
+    // }
+    // // if (currentSlides.length !== this.slidesPerView) {
+    // //   currentSlides = this.duplicatesPrepend.reverse().slice(this._current - this.slides.length + this.opts.slidesPerView - 1, this.slidesPerView)
+    // // }
+
+    // const prevSlides = this.slides.slice(this._current - this.opts.slidesPerView, this.opts.slidesPerView)
+    // if (prevSlides.length > 0) {
+    //   prevSlides.forEach(slide => {
+    //     slide.classList.add('slideshow__slide--prev')
+    //   })
+    // }
+
+    // const prevDuplicatedSlides = this.duplicatesPrepend.reverse().slice(this._current - this.slides.length + this.opts.slidesPerView, this.opts.slidesPerView)
+    // if (prevDuplicatedSlides.length > 0) {
+    //   prevDuplicatedSlides.forEach(slide => {
+    //     slide.classList.add('slideshow__slide--prev')
+    //   })
+    // }
+
+    // const nextSlides = this.slides.slice(this._current + this.opts.slidesPerView, this.slidesPerView)
+    // if (nextSlides.length > 0) {
+    //   nextSlides.forEach(slide => {
+    //     slide.classList.add('slideshow__slide--next')
+    //   })
+    // }
+
+    // const nextDuplicatedSlides = this.duplicatesAppend.slice(this._current - this.slides.length + this.opts.slidesPerView, this.opts.slidesPerView)
+    // if (nextDuplicatedSlides.length > 0) {
+    //   nextDuplicatedSlides.forEach(slide => {
+    //     slide.classList.add('slideshow__slide--next')
+    //   })
+    // }
+
+    if (this.opts.auto) {
+      this.auto = setTimeout(() => {
+        this.current = this.current + this.opts.slidesPerView
+      }, this.opts.delay)
+    }
+  }
+
+  /**
+   * @param {int} i
+   */
+  changeInstantly (i) {
+    const delay = getComputedStyle(this.wrapper).transitionDelay
+    const delayFloat = parseFloat(delay, 10) * 1000
+    const duration = getComputedStyle(this.wrapper).transitionDuration
+    const durationFloat = parseFloat(duration, 10) * 1000
+
+    setTimeout(() => {
+      this.wrapper.style.transitionDelay = '0s'
+      this.wrapper.style.transitionDuration = '0s'
+
+      this.current = i
+
+      setTimeout(() => {
+        this.wrapper.style.transitionDelay = null
+        this.wrapper.style.transitionDuration = null
+      }, 50)
+    }, delayFloat + durationFloat)
+  }
+
+  /**
+   * @param {NodeList|Array} slides
+   *
+   * @return {NodeList|Array}
+   */
+  clearState (slides) {
+    slides.forEach(slide => {
       slide.classList.remove('slideshow__slide--active')
       slide.classList.remove('slideshow__slide--next')
       slide.classList.remove('slideshow__slide--prev')
     })
-
-    this.slides[this._current].classList.add('slideshow__slide--active')
-
-    if (this.slides[this._current - 1]) {
-      this.slides[this._current - 1].classList.add('slideshow__slide--prev')
-    }
-
-    if (this.slides[this._current + 1]) {
-      this.slides[this._current + 1].classList.add('slideshow__slide--next')
-    }
-
-    if (this.opts.auto) {
-      this.auto = setTimeout(() => {
-        this.current = this.current + 1
-      }, this.opts.delay)
-    }
   }
 
   /**
@@ -183,11 +288,11 @@ export default class MagicRoundabout {
     // Handle pagination buttons
     if (this.opts.buttons) {
       this.buttons.next.addEventListener('click', e => {
-        this.current = this.current + 1
+        this.current = this.current + this.opts.slidesPerView
       })
 
       this.buttons.prev.addEventListener('click', e => {
-        this.current = this.current - 1
+        this.current = this.current - this.opts.slidesPerView
       })
     }
   }
@@ -280,11 +385,11 @@ export default class MagicRoundabout {
     e.cancelBubble = true
 
     if (d > 0) {
-      this.current = n + 1
+      this.current = n + this.opts.slidesPerView
     }
 
     if (d < 0) {
-      this.current = n - 1
+      this.current = n - this.opts.slidesPerView
     }
 
     this.touch = null
@@ -318,22 +423,22 @@ export default class MagicRoundabout {
 
     if (this.opts.vertical) {
       if (key === keys.up) {
-        this.current = this.current - 1
+        this.current = this.current - this.opts.slidesPerView
       }
 
       if (key === keys.down) {
-        this.current = this.current + 1
+        this.current = this.current + this.opts.slidesPerView
       }
 
       return
     }
 
     if (key === keys.left) {
-      this.current = this.current - 1
+      this.current = this.current - this.opts.slidesPerView
     }
 
     if (key === keys.right) {
-      this.current = this.current + 1
+      this.current = this.current + this.opts.slidesPerView
     }
   }
 
@@ -346,6 +451,15 @@ export default class MagicRoundabout {
     const innerSize = this.opts.vertical ? this.getInnerHeight : this.getInnerWidth
 
     let offset = 0
+
+    if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+      this.duplicatesPrepend.slice(0, this.duplicatesPrepend.length + Math.min(this._current, 0)).forEach(duplicate => {
+        offset += size(duplicate)
+      })
+    }
+
+    console.log(offset)
+
     for (var i = 0; i < this._current; i++) {
       offset += size(this.slides[i])
     }
@@ -382,7 +496,7 @@ export default class MagicRoundabout {
    * @return {float}
    */
   @bind
-  getOuterWidth(el) {
+  getOuterWidth (el) {
     const style = window.getComputedStyle(el)
 
     return this.getInnerWidth(el) + parseFloat(style.marginLeft) + parseFloat(style.marginRight)
@@ -396,7 +510,7 @@ export default class MagicRoundabout {
    * @return {float}
    */
   @bind
-  getOuterHeight(el) {
+  getOuterHeight (el) {
     const style = window.getComputedStyle(el)
 
     return this.getInnerHeight(el) + parseFloat(style.marginTop) + parseFloat(style.marginBottom)
@@ -410,7 +524,7 @@ export default class MagicRoundabout {
    * @return {float}
    */
   @bind
-  getInnerWidth(el) {
+  getInnerWidth (el) {
     return parseFloat(el.getBoundingClientRect().width)
   }
 
@@ -422,7 +536,7 @@ export default class MagicRoundabout {
    * @return {float}
    */
   @bind
-  getInnerHeight(el) {
+  getInnerHeight (el) {
     return parseFloat(el.getBoundingClientRect().height)
   }
 
