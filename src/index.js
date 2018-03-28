@@ -147,69 +147,13 @@ export default class MagicRoundabout {
     }
 
     this._current = i - 1
-    console.log(this._current)
     this.transition()
 
     this.opts.onChange(this)
 
-    this.clearState(this.slides)
-    this.clearState(this.duplicatesAppend)
-    this.clearState(this.duplicatesPrepend)
-
-    let x = this.current
-    this.slides.slice(this._current, this._current + this.opts.slidesPerView).forEach(slide => {
-      console.log(slide)
-      slide.classList.add('slideshow__slide--active')
-    })
-
-    if (this._current >= 0) {
-      this.duplicatesAppend.slice(this._current, this._current + this.opts.slidesPerView).forEach(slide => {
-        slide.classList.add('slideshow__slide--active')
-      })
-
-      let offset = this.duplicatesPrepend.length - this.slides.length + this._current
-      this.duplicatesPrepend.slice(Math.max(offset, 0), Math.max(offset + this.opts.slidesPerView, 0)).forEach(slide => {
-        slide.classList.add('slideshow__slide--active')
-      })
-    }
-
-    // const currentDuplicatedSlides = this.duplicatesAppend.slice(this._current - this.slides.length, this.slidesPerView)
-    // if (currentDuplicatedSlides.length > 0) {
-    //   currentDuplicatedSlides.forEach(slide => {
-    //     slide.classList.add('slideshow__slide--active')
-    //   })
-    // }
-    // // if (currentSlides.length !== this.slidesPerView) {
-    // //   currentSlides = this.duplicatesPrepend.reverse().slice(this._current - this.slides.length + this.opts.slidesPerView - 1, this.slidesPerView)
-    // // }
-
-    // const prevSlides = this.slides.slice(this._current - this.opts.slidesPerView, this.opts.slidesPerView)
-    // if (prevSlides.length > 0) {
-    //   prevSlides.forEach(slide => {
-    //     slide.classList.add('slideshow__slide--prev')
-    //   })
-    // }
-
-    // const prevDuplicatedSlides = this.duplicatesPrepend.reverse().slice(this._current - this.slides.length + this.opts.slidesPerView, this.opts.slidesPerView)
-    // if (prevDuplicatedSlides.length > 0) {
-    //   prevDuplicatedSlides.forEach(slide => {
-    //     slide.classList.add('slideshow__slide--prev')
-    //   })
-    // }
-
-    // const nextSlides = this.slides.slice(this._current + this.opts.slidesPerView, this.slidesPerView)
-    // if (nextSlides.length > 0) {
-    //   nextSlides.forEach(slide => {
-    //     slide.classList.add('slideshow__slide--next')
-    //   })
-    // }
-
-    // const nextDuplicatedSlides = this.duplicatesAppend.slice(this._current - this.slides.length + this.opts.slidesPerView, this.opts.slidesPerView)
-    // if (nextDuplicatedSlides.length > 0) {
-    //   nextDuplicatedSlides.forEach(slide => {
-    //     slide.classList.add('slideshow__slide--next')
-    //   })
-    // }
+    this.applyClasses(this.slides, this._current)
+    this.applyClasses(this.duplicatesAppend, this._current - this.slides.length)
+    this.applyClasses(this.duplicatesPrepend, this._current + this.slides.length - this.duplicatesPrepend.length - 1)
 
     if (this.opts.auto) {
       this.auto = setTimeout(() => {
@@ -219,6 +163,52 @@ export default class MagicRoundabout {
   }
 
   /**
+   * Apply classes to the active (or its equivalent duplicate) slide,
+   * and the surrounding next and previous slides
+   *
+   * @param {Array} elements
+   * @param {int} i
+   */
+  applyClasses (elements, i) {
+    let k = this.opts.slidesPerView
+    const selected = []
+
+    if (i >= 0) {
+      elements.slice(i, i + k).forEach(slide => {
+        slide.classList.remove('slideshow__slide--next')
+        slide.classList.remove('slideshow__slide--prev')
+        slide.classList.add('slideshow__slide--active')
+        selected.push(slide)
+      })
+    }
+
+    if (i >= k) {
+      elements.slice(i - k, i).forEach(slide => {
+        slide.classList.remove('slideshow__slide--next')
+        slide.classList.remove('slideshow__slide--active')
+        slide.classList.add('slideshow__slide--prev')
+        selected.push(slide)
+      })
+    }
+
+    if (i + k >= 0) {
+      elements.slice(i + k, i + k + k).forEach(slide => {
+        slide.classList.remove('slideshow__slide--active')
+        slide.classList.remove('slideshow__slide--prev')
+        slide.classList.add('slideshow__slide--next')
+        selected.push(slide)
+      })
+    }
+
+    this.clearState(elements.filter(slide => {
+      return selected.indexOf(slide) === -1
+    }))
+  }
+
+  /**
+   * Trigger a delayed instant transition, to allow us to silently flick from
+   * a duplicated slide to its corresponding slide in the main list
+   *
    * @param {int} i
    */
   changeInstantly (i) {
@@ -241,6 +231,8 @@ export default class MagicRoundabout {
   }
 
   /**
+   * Clear a slide state completely
+   *
    * @param {NodeList|Array} slides
    *
    * @return {NodeList|Array}
@@ -458,8 +450,6 @@ export default class MagicRoundabout {
       })
     }
 
-    console.log(offset)
-
     for (var i = 0; i < this._current; i++) {
       offset += size(this.slides[i])
     }
@@ -506,7 +496,7 @@ export default class MagicRoundabout {
    * Get the height of an element including padding, border and margin
    *
    * @param {HTMLElement} el
-   * 
+   *
    * @return {float}
    */
   @bind

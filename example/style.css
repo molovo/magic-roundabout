@@ -165,9 +165,15 @@ code {
   .slideshow__slide {
     flex: 0 0 45%;
     margin-right: 3em;
+    opacity: 0;
+    transition: opacity .375s;
   }
     .slideshow__slide--active {
-      border: 20px solid limegreen;
+      opacity: 1;
+    }
+    .slideshow__slide--next,
+    .slideshow__slide--prev {
+      opacity: .2;
     }
     .slideshow__slide img {
       width: 100%;

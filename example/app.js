@@ -220,12 +220,61 @@ var MagicRoundabout = (_class = function () {
 
 
   _createClass(MagicRoundabout, [{
-    key: 'changeInstantly',
+    key: 'applyClasses',
 
 
     /**
+     * Apply classes to the active (or its equivalent duplicate) slide,
+     * and the surrounding next and previous slides
+     *
+     * @param {Array} elements
      * @param {int} i
      */
+    value: function applyClasses(elements, i) {
+      var k = this.opts.slidesPerView;
+      var selected = [];
+
+      if (i >= 0) {
+        elements.slice(i, i + k).forEach(function (slide) {
+          slide.classList.remove('slideshow__slide--next');
+          slide.classList.remove('slideshow__slide--prev');
+          slide.classList.add('slideshow__slide--active');
+          selected.push(slide);
+        });
+      }
+
+      if (i >= k) {
+        elements.slice(i - k, i).forEach(function (slide) {
+          slide.classList.remove('slideshow__slide--next');
+          slide.classList.remove('slideshow__slide--active');
+          slide.classList.add('slideshow__slide--prev');
+          selected.push(slide);
+        });
+      }
+
+      if (i + k >= 0) {
+        elements.slice(i + k, i + k + k).forEach(function (slide) {
+          slide.classList.remove('slideshow__slide--active');
+          slide.classList.remove('slideshow__slide--prev');
+          slide.classList.add('slideshow__slide--next');
+          selected.push(slide);
+        });
+      }
+
+      this.clearState(elements.filter(function (slide) {
+        return selected.indexOf(slide) === -1;
+      }));
+    }
+
+    /**
+     * Trigger a delayed instant transition, to allow us to silently flick from
+     * a duplicated slide to its corresponding slide in the main list
+     *
+     * @param {int} i
+     */
+
+  }, {
+    key: 'changeInstantly',
     value: function changeInstantly(i) {
       var _this2 = this;
 
@@ -248,6 +297,8 @@ var MagicRoundabout = (_class = function () {
     }
 
     /**
+     * Clear a slide state completely
+     *
      * @param {NodeList|Array} slides
      *
      * @return {NodeList|Array}
@@ -490,8 +541,6 @@ var MagicRoundabout = (_class = function () {
         });
       }
 
-      console.log(offset);
-
       for (var i = 0; i < this._current; i++) {
         offset += size(this.slides[i]);
       }
@@ -540,7 +589,7 @@ var MagicRoundabout = (_class = function () {
      * Get the height of an element including padding, border and margin
      *
      * @param {HTMLElement} el
-     * 
+     *
      * @return {float}
      */
 
@@ -650,69 +699,13 @@ var MagicRoundabout = (_class = function () {
       }
 
       this._current = i - 1;
-      console.log(this._current);
       this.transition();
 
       this.opts.onChange(this);
 
-      this.clearState(this.slides);
-      this.clearState(this.duplicatesAppend);
-      this.clearState(this.duplicatesPrepend);
-
-      var x = this.current;
-      this.slides.slice(this._current, this._current + this.opts.slidesPerView).forEach(function (slide) {
-        console.log(slide);
-        slide.classList.add('slideshow__slide--active');
-      });
-
-      if (this._current >= 0) {
-        this.duplicatesAppend.slice(this._current, this._current + this.opts.slidesPerView).forEach(function (slide) {
-          slide.classList.add('slideshow__slide--active');
-        });
-
-        var offset = this.duplicatesPrepend.length - this.slides.length + this._current;
-        this.duplicatesPrepend.slice(Math.max(offset, 0), Math.max(offset + this.opts.slidesPerView, 0)).forEach(function (slide) {
-          slide.classList.add('slideshow__slide--active');
-        });
-      }
-
-      // const currentDuplicatedSlides = this.duplicatesAppend.slice(this._current - this.slides.length, this.slidesPerView)
-      // if (currentDuplicatedSlides.length > 0) {
-      //   currentDuplicatedSlides.forEach(slide => {
-      //     slide.classList.add('slideshow__slide--active')
-      //   })
-      // }
-      // // if (currentSlides.length !== this.slidesPerView) {
-      // //   currentSlides = this.duplicatesPrepend.reverse().slice(this._current - this.slides.length + this.opts.slidesPerView - 1, this.slidesPerView)
-      // // }
-
-      // const prevSlides = this.slides.slice(this._current - this.opts.slidesPerView, this.opts.slidesPerView)
-      // if (prevSlides.length > 0) {
-      //   prevSlides.forEach(slide => {
-      //     slide.classList.add('slideshow__slide--prev')
-      //   })
-      // }
-
-      // const prevDuplicatedSlides = this.duplicatesPrepend.reverse().slice(this._current - this.slides.length + this.opts.slidesPerView, this.opts.slidesPerView)
-      // if (prevDuplicatedSlides.length > 0) {
-      //   prevDuplicatedSlides.forEach(slide => {
-      //     slide.classList.add('slideshow__slide--prev')
-      //   })
-      // }
-
-      // const nextSlides = this.slides.slice(this._current + this.opts.slidesPerView, this.slidesPerView)
-      // if (nextSlides.length > 0) {
-      //   nextSlides.forEach(slide => {
-      //     slide.classList.add('slideshow__slide--next')
-      //   })
-      // }
-
-      // const nextDuplicatedSlides = this.duplicatesAppend.slice(this._current - this.slides.length + this.opts.slidesPerView, this.opts.slidesPerView)
-      // if (nextDuplicatedSlides.length > 0) {
-      //   nextDuplicatedSlides.forEach(slide => {
-      //     slide.classList.add('slideshow__slide--next')
-      //   })
-      // }
+      this.applyClasses(this.slides, this._current);
+      this.applyClasses(this.duplicatesAppend, this._current - this.slides.length);
+      this.applyClasses(this.duplicatesPrepend, this._current + this.slides.length - this.duplicatesPrepend.length - 1);
 
       if (this.opts.auto) {
         this.auto = setTimeout(function () {
