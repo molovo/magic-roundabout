@@ -12,7 +12,69 @@
   <h1>Magic Roundabout</h1>
 
   <div class="examples">
+    <section class="examples__item example" data-opts='{"loop": false}'>
+      <div class="example__title">
+        <h2>Basic</h2>
+      </div>
+
+      <div class="slideshow">
+        <div class="slideshow__slides">
+          <div class="slideshow__slide" data-slide="1">
+            <img src="http://morganfillman.space/400/400" alt="Nicholas Cage" />
+          </div>
+
+          <div class="slideshow__slide" data-slide="2">
+            <img src="http://morganfillman.space/600/200" alt="Nicholas Cage" />
+          </div>
+
+          <div class="slideshow__slide" data-slide="3">
+            <img src="http://morganfillman.space/800/400" alt="Nicholas Cage" />
+          </div>
+
+          <div class="slideshow__slide" data-slide="4">
+            <img src="http://morganfillman.space/500/150" alt="Nicholas Cage" />
+          </div>
+        </div>
+
+        <a href="javascript:void('')" class="slideshow__button slideshow__button--prev">Previous</a>
+        <a href="javascript:void('')" class="slideshow__button slideshow__button--next">Next</a>
+      </div>
+    </section>
+
+    <section class="examples__item example" data-opts='{"loop": true}'>
+      <div class="example__title">
+        <h2>Looping</h2>
+      </div>
+
+      <div class="slideshow">
+        <div class="slideshow__slides">
+          <div class="slideshow__slide" data-slide="1">
+            <img src="http://morganfillman.space/400/400" alt="Nicholas Cage" />
+          </div>
+
+          <div class="slideshow__slide" data-slide="2">
+            <img src="http://morganfillman.space/600/200" alt="Nicholas Cage" />
+          </div>
+
+          <div class="slideshow__slide" data-slide="3">
+            <img src="http://morganfillman.space/800/400" alt="Nicholas Cage" />
+          </div>
+
+          <div class="slideshow__slide" data-slide="4">
+            <img src="http://morganfillman.space/500/150" alt="Nicholas Cage" />
+          </div>
+        </div>
+
+        <a href="javascript:void('')" class="slideshow__button slideshow__button--prev">Previous</a>
+        <a href="javascript:void('')" class="slideshow__button slideshow__button--next">Next</a>
+      </div>
+    </section>
+
     <section class="examples__item example" data-opts='{"loop": true, "duplicateSlidesWhenLooping": true}'>
+      <div class="example__title">
+        <h2>Seamless looping</h2>
+      </div>
+
       <div class="slideshow">
         <div class="slideshow__slides">
           <div class="slideshow__slide" data-slide="1">

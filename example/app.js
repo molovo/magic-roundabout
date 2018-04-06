@@ -230,7 +230,14 @@ var MagicRoundabout = (_class = function () {
      * @param {Array} elements
      * @param {int} i
      */
-    value: function applyClasses(elements, i) {
+    value: function applyClasses() {
+      var elements = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+      var i = arguments[1];
+
+      if (elements.length === 0) {
+        return;
+      }
+
       var k = this.opts.slidesPerView;
       var selected = [];
 
@@ -704,8 +711,11 @@ var MagicRoundabout = (_class = function () {
       this.opts.onChange(this);
 
       this.applyClasses(this.slides, this._current);
-      this.applyClasses(this.duplicatesAppend, this._current - this.slides.length);
-      this.applyClasses(this.duplicatesPrepend, this._current + this.slides.length - this.duplicatesPrepend.length - 1);
+
+      if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+        this.applyClasses(this.duplicatesAppend, this._current - this.slides.length);
+        this.applyClasses(this.duplicatesPrepend, this._current + this.slides.length - this.duplicatesPrepend.length - 1);
+      }
 
       if (this.opts.auto) {
         this.auto = setTimeout(function () {
