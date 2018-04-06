@@ -172,7 +172,11 @@ export default class MagicRoundabout {
    * @param {Array} elements
    * @param {int} i
    */
-  applyClasses (elements, i) {
+  applyClasses (elements = [], i) {
+    if (elements.length === 0) {
+      return
+    }
+
     let k = this.opts.slidesPerView
     const selected = []
 
