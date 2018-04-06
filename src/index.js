@@ -152,8 +152,11 @@ export default class MagicRoundabout {
     this.opts.onChange(this)
 
     this.applyClasses(this.slides, this._current)
-    this.applyClasses(this.duplicatesAppend, this._current - this.slides.length)
-    this.applyClasses(this.duplicatesPrepend, this._current + this.slides.length - this.duplicatesPrepend.length - 1)
+
+    if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+      this.applyClasses(this.duplicatesAppend, this._current - this.slides.length)
+      this.applyClasses(this.duplicatesPrepend, this._current + this.slides.length - this.duplicatesPrepend.length - 1)
+    }
 
     if (this.opts.auto) {
       this.auto = setTimeout(() => {
