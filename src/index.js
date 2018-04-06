@@ -16,7 +16,7 @@ export default class MagicRoundabout {
     click: true,
     delay: 10000,
     duplicateSlidesWhenLooping: false,
-    duplicateSlidesCount: 2,
+    duplicateSlidesCount: 1,
     keys: true,
     limit: false,
     loop: true,
