@@ -1,26 +1,25 @@
 language: node_js
 node_js: 8
-script: npm test
+script: echo 1
 before_deploy:
 - node_modules/.bin/babel src --out-dir lib
 - node_modules/.bin/gulp build
 deploy:
-  matrix:
-  - provider: npm
-    email: hi@molovo.co
-    skip_cleanup: true
-    api_key:
-      secure: iYPbSGtmjcZOHfs/YspGbBxxQ7saJX28s9N+zMORVEPy4gOLKzCVOSMtuFrwf64Nj1iPX2qlrPbc9M6X0qt88UzLCguyQqt+Lyk0vIXD64bXRtynOBRLwbVBR1HoTLuQHZYNNvpR9KbdkbAAxqHakDk7v3fuwT8Twg7+fnW5Ok50Z5V0TGgv6TH3QJM4Yum1X26AJa9CTeqwLod8DMfigwshqyUa6e/ZI9nJconmGF5YJO98MRAW9AkfoiWZqbXEWYLdDnTH9o6IV0vLzwa1kMhz7rAI4wi8W44zCFh6Kws0k7sE8SWnRRZ8OaXNEpWoIvd11uBcacccq/lH64GFamiNW+LlUyJ2G6otCAXyosXWg184MEPd94LEZz6f5Bhaa4tWfwY5W6cyR4PKUu009s5Rw82xuJehh3NCXEHj6kCUrH79wflO7OwcSguSacIZwWftQ9CauADsFtCpSVmdOYL359xdgoSiJPDOHDwbs2tpONmUmoyXJclFk9YpE+pUla3+/beuiL7QwgW/2JrUyyD/ngOoQuo+iCnjsVVO/hXudS55heg/NZ7eBk/0WzY7lUvpdrM704QfbKtri43Tpgioum/cyS3HvGeTYZd0QZJvVoMr07cLTnZ/dsMKlIaaLQD+FTU7rWOnxIldgCIB20nintVAOtHXyskArDqkEuI=
-    on:
-      tags: true
-      repo: molovo/magic-roundabout
-  - provider: releases
-    file:
-    - dist/magic-roundabout.js
-    - dist/magic-roundabout.min.js
-    skip_cleanup: true
-    api_key:
-      secure: NYs7D/+xFSWTFM2lDgZGBJmftDYele5yl6otlo38oH0HDZ008w5jVKqJomextCGyZf+EPRvva8QFfsEc9I19RC0J6/EVh2++6Ku1h/ih8l3IzSj85tuJG3zE7TpWNp5+vIhK0jkWyB44PA1L9vbMvBQCdFbaeEqZniRhDyIamQFiASSwhN3VGJecCPhwfWDmH9XJaNCuH3ji/iDhmZJQrvP6Q7Q+DV/tgFI8hYs7mAJrt7m7HW70bS3spLW7tI8oMGXxgKySmZyc4skpIoyfadTvxDMZzFAjIdkEfa53ERJ+eNjOt2R4oyCfeqquI3ocAMHd9DKlZmV/RlBw6Q/bwvdHXpDWP9Z9LoXhV0bozb7s1vC60vMNGdhHUtXF/eSXXlBMr8CICkmoTzRFLdc0DJDksHfdjtFpt2QWeIyiIkKCpw4zjqn5fCJLTdFkssBmiS1O1j0Nyv96VDD+ifbPVPaLwlK37y2RoRYR4GMdWUuqawEA+ta83fPsQINCaa8OnX6eY1GXkbkuBVkia/hoRn0iOdlEpLuUffjuucTg/GSaF/M1ZtaEfEfN292/FZVSH3gzoWyP9tQdUDWwnRaxGhDPwV2hi34Jo6edcMSG1uAuXvlpTEVYAgwW6rHNlmQvpmZ7HAujWnuniHc+APwtzHZppjPwMY5sQx7fmfGyKMQ=
-    on:
-      tags: true
-      repo: molovo/magic-roundabout
+- provider: npm
+  email: hi@molovo.co
+  skip_cleanup: true
+  api_key:
+    secure: iYPbSGtmjcZOHfs/YspGbBxxQ7saJX28s9N+zMORVEPy4gOLKzCVOSMtuFrwf64Nj1iPX2qlrPbc9M6X0qt88UzLCguyQqt+Lyk0vIXD64bXRtynOBRLwbVBR1HoTLuQHZYNNvpR9KbdkbAAxqHakDk7v3fuwT8Twg7+fnW5Ok50Z5V0TGgv6TH3QJM4Yum1X26AJa9CTeqwLod8DMfigwshqyUa6e/ZI9nJconmGF5YJO98MRAW9AkfoiWZqbXEWYLdDnTH9o6IV0vLzwa1kMhz7rAI4wi8W44zCFh6Kws0k7sE8SWnRRZ8OaXNEpWoIvd11uBcacccq/lH64GFamiNW+LlUyJ2G6otCAXyosXWg184MEPd94LEZz6f5Bhaa4tWfwY5W6cyR4PKUu009s5Rw82xuJehh3NCXEHj6kCUrH79wflO7OwcSguSacIZwWftQ9CauADsFtCpSVmdOYL359xdgoSiJPDOHDwbs2tpONmUmoyXJclFk9YpE+pUla3+/beuiL7QwgW/2JrUyyD/ngOoQuo+iCnjsVVO/hXudS55heg/NZ7eBk/0WzY7lUvpdrM704QfbKtri43Tpgioum/cyS3HvGeTYZd0QZJvVoMr07cLTnZ/dsMKlIaaLQD+FTU7rWOnxIldgCIB20nintVAOtHXyskArDqkEuI=
+  on:
+    tags: true
+    repo: molovo/magic-roundabout
+- provider: releases
+  file:
+  - dist/magic-roundabout.js
+  - dist/magic-roundabout.min.js
+  skip_cleanup: true
+  api_key:
+    secure: NYs7D/+xFSWTFM2lDgZGBJmftDYele5yl6otlo38oH0HDZ008w5jVKqJomextCGyZf+EPRvva8QFfsEc9I19RC0J6/EVh2++6Ku1h/ih8l3IzSj85tuJG3zE7TpWNp5+vIhK0jkWyB44PA1L9vbMvBQCdFbaeEqZniRhDyIamQFiASSwhN3VGJecCPhwfWDmH9XJaNCuH3ji/iDhmZJQrvP6Q7Q+DV/tgFI8hYs7mAJrt7m7HW70bS3spLW7tI8oMGXxgKySmZyc4skpIoyfadTvxDMZzFAjIdkEfa53ERJ+eNjOt2R4oyCfeqquI3ocAMHd9DKlZmV/RlBw6Q/bwvdHXpDWP9Z9LoXhV0bozb7s1vC60vMNGdhHUtXF/eSXXlBMr8CICkmoTzRFLdc0DJDksHfdjtFpt2QWeIyiIkKCpw4zjqn5fCJLTdFkssBmiS1O1j0Nyv96VDD+ifbPVPaLwlK37y2RoRYR4GMdWUuqawEA+ta83fPsQINCaa8OnX6eY1GXkbkuBVkia/hoRn0iOdlEpLuUffjuucTg/GSaF/M1ZtaEfEfN292/FZVSH3gzoWyP9tQdUDWwnRaxGhDPwV2hi34Jo6edcMSG1uAuXvlpTEVYAgwW6rHNlmQvpmZ7HAujWnuniHc+APwtzHZppjPwMY5sQx7fmfGyKMQ=
+  on:
+    tags: true
+    repo: molovo/magic-roundabout
