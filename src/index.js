@@ -66,6 +66,13 @@ export default class MagicRoundabout {
 
     this.container = target
     this.wrapper = this.container.querySelector('.slideshow__slides')
+
+    // Some HTML caching systems may leave duplicated slides in place when the
+    // page loads. We clear them here to prevent duplicating the duplicates
+    this.wrapper.querySelectorAll('.slideshow__slide--duplicate').forEach(slide => {
+      slide.parentNode.removeChild(slide)
+    })
+
     this.slides = Array.from(this.container.querySelectorAll('.slideshow__slide'))
 
     if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
