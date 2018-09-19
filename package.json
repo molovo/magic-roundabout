@@ -1,6 +1,6 @@
 {
   "name": "magic-roundabout",
-  "version": "1.2.1-beta",
+  "version": "1.2.2-0",
   "description": "A tiny JavaScript carousel",
   "main": "lib/index.js",
   "repository": "https://github.com/molovo/magic-roundabout",
