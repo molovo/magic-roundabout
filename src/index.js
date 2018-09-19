@@ -179,6 +179,7 @@ export default class MagicRoundabout {
    * @param {Array} elements
    * @param {int} i
    */
+  @bind
   applyClasses (elements = [], i) {
     if (elements.length === 0) {
       return
@@ -225,6 +226,7 @@ export default class MagicRoundabout {
    *
    * @param {int} i
    */
+  @bind
   changeInstantly (i) {
     const delay = getComputedStyle(this.wrapper).transitionDelay
     const delayFloat = parseFloat(delay, 10) * 1000
@@ -251,6 +253,7 @@ export default class MagicRoundabout {
    *
    * @return {NodeList|Array}
    */
+  @bind
   clearState (slides) {
     slides.forEach(slide => {
       slide.classList.remove('slideshow__slide--active')
@@ -262,6 +265,7 @@ export default class MagicRoundabout {
   /**
    * Register listeners to handle user interactions
    */
+  @bind
   registerListeners () {
     // Set the container size
     window.addEventListener('resize', this.setContainerSize)
@@ -451,6 +455,7 @@ export default class MagicRoundabout {
   /**
    * Transition to the current slide
    */
+  @bind
   transition () {
     const axis = this.opts.vertical ? 'translateY' : 'translateX'
     const size = this.opts.vertical ? this.getOuterHeight : this.getOuterWidth
@@ -549,6 +554,7 @@ export default class MagicRoundabout {
    *
    * @return {bool}
    */
+  @bind
   isInViewport () {
     const {top, left, bottom, right} = this.container.getBoundingClientRect()
 
