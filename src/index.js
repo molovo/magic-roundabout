@@ -480,8 +480,8 @@ export default class MagicRoundabout {
 
       offset = Math.min(offset, total - this.container.clientWidth)
 
-      if (offset >= total - this.container.clientWidth) {
-        if (this.opts.buttons) {
+      if (this.opts.buttons) {
+        if (offset >= total - this.container.clientWidth) {
           this.buttons.next.classList.add('slideshow__button--disabled')
         } else {
           this.buttons.next.classList.remove('slideshow__button--disabled')
