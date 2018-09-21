@@ -349,6 +349,12 @@ export default class MagicRoundabout {
    */
   @bind
   handleTouchMove (e) {
+    // If there are multiple touches, ignore them so that we don't
+    // interfere with pinch-to-zoom
+    if (e.touches.length > 1) {
+      return
+    }
+
     const x = e.touches[0].clientX
     const y = e.touches[0].clientY
 
