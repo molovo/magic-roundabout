@@ -425,7 +425,7 @@ export default class MagicRoundabout {
 
     setTimeout(() => {
       this.transitioning = false
-    }, 2000)
+    }, 1250)
 
     return false
   }
