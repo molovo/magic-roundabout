@@ -74,17 +74,23 @@ export default class MagicRoundabout {
     })
 
     this.slides = Array.from(this.container.querySelectorAll('.slideshow__slide'))
+    let i = 0
+    this.slides.forEach(slide => {
+      slide.dataset.index = i++
+    })
 
     if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
       this.duplicatesAppend = this.slides.slice(0, this.opts.duplicateSlidesCount).map(slide => slide.cloneNode(true))
       this.duplicatesAppend.forEach(duplicate => {
         duplicate.classList.add('slideshow__slide--duplicate')
+        duplicate.dataset.index = parseInt(duplicate.dataset.index) + this.slides.length
         this.wrapper.appendChild(duplicate)
       })
 
       this.duplicatesPrepend = this.slides.slice(0 - this.opts.duplicateSlidesCount).map(slide => slide.cloneNode(true))
       this.duplicatesPrepend.reverse().forEach(duplicate => {
         duplicate.classList.add('slideshow__slide--duplicate')
+        duplicate.dataset.index = parseInt(duplicate.dataset.index) - this.slides.length
         this.wrapper.insertBefore(duplicate, this.wrapper.childNodes[0])
       })
     }
@@ -185,39 +191,41 @@ export default class MagicRoundabout {
       return
     }
 
-    let k = this.opts.slidesPerView
-    const selected = []
+    requestAnimationFrame(t => {
+      let k = this.opts.slidesPerView
+      const selected = []
 
-    if (i >= 0) {
-      elements.slice(i, i + k).forEach(slide => {
-        slide.classList.remove('slideshow__slide--next')
-        slide.classList.remove('slideshow__slide--prev')
-        slide.classList.add('slideshow__slide--active')
-        selected.push(slide)
-      })
-    }
+      if (i >= 0) {
+        elements.slice(i, i + k).forEach(slide => {
+          slide.classList.remove('slideshow__slide--next')
+          slide.classList.remove('slideshow__slide--prev')
+          slide.classList.add('slideshow__slide--active')
+          selected.push(slide)
+        })
+      }
 
-    if (i >= k) {
-      elements.slice(i - k, i).forEach(slide => {
-        slide.classList.remove('slideshow__slide--next')
-        slide.classList.remove('slideshow__slide--active')
-        slide.classList.add('slideshow__slide--prev')
-        selected.push(slide)
-      })
-    }
+      if (i >= k) {
+        elements.slice(i - k, i).forEach(slide => {
+          slide.classList.remove('slideshow__slide--next')
+          slide.classList.remove('slideshow__slide--active')
+          slide.classList.add('slideshow__slide--prev')
+          selected.push(slide)
+        })
+      }
 
-    if (i + k >= 0) {
-      elements.slice(i + k, i + k + k).forEach(slide => {
-        slide.classList.remove('slideshow__slide--active')
-        slide.classList.remove('slideshow__slide--prev')
-        slide.classList.add('slideshow__slide--next')
-        selected.push(slide)
-      })
-    }
+      if (i + k >= 0) {
+        elements.slice(i + k, i + k + k).forEach(slide => {
+          slide.classList.remove('slideshow__slide--active')
+          slide.classList.remove('slideshow__slide--prev')
+          slide.classList.add('slideshow__slide--next')
+          selected.push(slide)
+        })
+      }
 
-    this.clearState(elements.filter(slide => {
-      return selected.indexOf(slide) === -1
-    }))
+      this.clearState(elements.filter(slide => {
+        return selected.indexOf(slide) === -1
+      }))
+    })
   }
 
   /**
@@ -255,10 +263,12 @@ export default class MagicRoundabout {
    */
   @bind
   clearState (slides) {
-    slides.forEach(slide => {
-      slide.classList.remove('slideshow__slide--active')
-      slide.classList.remove('slideshow__slide--next')
-      slide.classList.remove('slideshow__slide--prev')
+    requestAnimationFrame(t => {
+      slides.forEach(slide => {
+        slide.classList.remove('slideshow__slide--active')
+        slide.classList.remove('slideshow__slide--next')
+        slide.classList.remove('slideshow__slide--prev')
+      })
     })
   }
 
@@ -288,11 +298,14 @@ export default class MagicRoundabout {
 
     // Slide to clicked slide
     if (this.opts.click) {
-      this.slides.forEach(slide => {
+      const fn = slide => {
         slide.addEventListener('click', e => {
-          this.current = Array.from(this.slides).indexOf(slide) + 1
+          this.current = slide.dataset.index
         })
-      })
+      }
+      this.slides.forEach(fn)
+      this.duplicatesAppend.forEach(fn)
+      this.duplicatesPrepend.forEach(fn)
     }
 
     // Handle pagination buttons
@@ -501,7 +514,9 @@ export default class MagicRoundabout {
       }
     }
 
-    this.wrapper.style.transform = `${axis}(${offset * -1}px)`
+    requestAnimationFrame(t => {
+      this.wrapper.style.transform = `${axis}(${offset * -1}px)`
+    })
   }
 
   /**
