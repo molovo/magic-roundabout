@@ -379,6 +379,11 @@ export default class MagicRoundabout {
   @bind
   handleDeltaChange (e, d) {
     if (this.transitioning) {
+      clearTimeout(this.transitionTimeout)
+      this.transitionTimeout(() => {
+        this.transitioning = false
+      })
+
       e.stopPropagation()
       e.preventDefault()
       e.cancelBubble = true
@@ -409,10 +414,6 @@ export default class MagicRoundabout {
     }
 
     this.touch = null
-
-    setTimeout(() => {
-      this.transitioning = false
-    }, 2000)
 
     return false
   }
