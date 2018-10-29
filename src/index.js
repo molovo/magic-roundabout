@@ -304,8 +304,11 @@ export default class MagicRoundabout {
         })
       }
       this.slides.forEach(fn)
-      this.duplicatesAppend.forEach(fn)
-      this.duplicatesPrepend.forEach(fn)
+
+      if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+        this.duplicatesAppend.forEach(fn)
+        this.duplicatesPrepend.forEach(fn)
+      }
     }
 
     // Handle pagination buttons
