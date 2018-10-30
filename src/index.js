@@ -74,7 +74,7 @@ export default class MagicRoundabout {
     })
 
     this.slides = Array.from(this.container.querySelectorAll('.slideshow__slide'))
-    let i = 0
+    let i = 1
     this.slides.forEach(slide => {
       slide.dataset.index = i++
     })
