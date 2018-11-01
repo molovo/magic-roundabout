@@ -370,6 +370,12 @@ export default class MagicRoundabout {
    */
   @bind
   handleTouchMove (e) {
+    // If a touch hasn't been recorded, we can't calculate the distance,
+    // so we ignore the movement
+    if (!this.touch) {
+      return
+    }
+
     // If there are multiple touches, ignore them so that we don't
     // interfere with pinch-to-zoom
     if (e.touches.length > 1) {
