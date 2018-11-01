@@ -236,6 +236,10 @@ export default class MagicRoundabout {
    */
   @bind
   changeInstantly (i) {
+    // Prevent interaction to avoid the user navigating to a slide that does
+    // not exist
+    this.transitioning = true
+
     const delay = getComputedStyle(this.wrapper).transitionDelay
     const delayFloat = parseFloat(delay, 10) * 1000
     const duration = getComputedStyle(this.wrapper).transitionDuration
@@ -246,6 +250,7 @@ export default class MagicRoundabout {
       this.wrapper.style.transitionDuration = '0s'
 
       this.current = i
+      this.transitioning = false
 
       setTimeout(() => {
         this.wrapper.style.transitionDelay = null
