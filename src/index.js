@@ -340,11 +340,11 @@ export default class MagicRoundabout {
   @bind
   handleScroll (e) {
     if (this.opts.vertical && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      return this.handleDeltaChange(e, e.deltaY)
+      return this.handleDeltaChange(e, e.deltaY, true)
     }
 
     if (!this.opts.vertical && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-      return this.handleDeltaChange(e, e.deltaX)
+      return this.handleDeltaChange(e, e.deltaX, true)
     }
   }
 
@@ -378,11 +378,11 @@ export default class MagicRoundabout {
     const deltaY = this.touch.y - y
 
     if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
-      return this.handleDeltaChange(e, deltaY)
+      return this.handleDeltaChange(e, deltaY, false)
     }
 
     if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
-      return this.handleDeltaChange(e, deltaX)
+      return this.handleDeltaChange(e, deltaX, false)
     }
   }
 
@@ -390,10 +390,11 @@ export default class MagicRoundabout {
    * Handle a swipe or scroll interaction
    *
    * @param {WheelEvent|TouchEvent} e
-   * @param {int} d
+   * @param {int} distance
+   * @param {bool} preventInteraction
    */
   @bind
-  handleDeltaChange (e, d) {
+  handleDeltaChange (e, distance, preventInteraction = false) {
     if (this.transitioning) {
       e.stopPropagation()
       e.preventDefault()
@@ -403,8 +404,8 @@ export default class MagicRoundabout {
 
     const n = this.current
 
-    const atStart = d < -25 && n === 1
-    const atEnd = d > 25 && n === this.slides.length
+    const atStart = distance < -25 && n === 1
+    const atEnd = distance > 25 && n === this.slides.length
 
     if (atStart || atEnd) {
       return
@@ -416,19 +417,25 @@ export default class MagicRoundabout {
     e.preventDefault()
     e.cancelBubble = true
 
-    if (d > 0) {
+    if (distance > 0) {
       this.current = n + this.opts.slidesPerView
     }
 
-    if (d < 0) {
+    if (distance < 0) {
       this.current = n - this.opts.slidesPerView
     }
 
     this.touch = null
 
-    setTimeout(() => {
-      this.transitioning = false
-    }, 1250)
+    if (preventInteraction) {
+      setTimeout(() => {
+        this.transitioning = false
+      }, 1250)
+
+      return false
+    }
+
+    this.transitioning = false
 
     return false
   }
