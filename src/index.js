@@ -15,6 +15,7 @@ export default class MagicRoundabout {
     center: false,
     click: true,
     delay: 10000,
+    draggable: false,
     duplicateSlidesWhenLooping: false,
     duplicateSlidesCount: 1,
     keys: true,
@@ -294,6 +295,9 @@ export default class MagicRoundabout {
     if (this.opts.touch) {
       this.container.addEventListener('touchstart', this.handleTouchStart)
       this.container.addEventListener('touchmove', this.handleTouchMove)
+      this.container.addEventListener('mousedown', this.handleMouseDown)
+      this.container.addEventListener('mousemove', this.handleMouseMove)
+      this.container.addEventListener('mouseup', this.handleMouseUp)
     }
 
     // Handle keyboard events
@@ -360,16 +364,103 @@ export default class MagicRoundabout {
    */
   @bind
   handleTouchStart (e) {
-    this.touch = {x: e.touches[0].clientX, y: e.touches[0].clientY}
+    this.touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
   }
 
   /**
-   * Handle touchmove events on the container
+   * Convert mousedown events to touchstart events
+   *
+   * @param {MousedownEvent} e
+   */
+  @bind
+  handleMouseDown (e) {
+    e.touches = [{ clientX: e.clientX, clientY: e.clientY }]
+    return this.handleTouchStart(e)
+  }
+
+  /**
+   * Handle touchend events on the container
    *
    * @param {TouchEvent} e
    */
   @bind
   handleTouchMove (e) {
+    clearTimeout(this.touchEndHandler)
+
+    // If a touch hasn't been recorded, we can't calculate the distance,
+    // so we ignore the movement
+    if (!this.touch) {
+      return
+    }
+
+    // If there are multiple touches, ignore them so that we don't
+    // interfere with pinch-to-zoom
+    if (e.touches.length > 1) {
+      return
+    }
+
+    if (!this.opts.draggable) {
+      this.touchEndHandler = setTimeout(this.handleTouchEnd.bind(this, e), 50)
+      return
+    }
+
+    if (!this.transitioning) {
+      const x = e.touches[0].clientX
+      const y = e.touches[0].clientY
+
+      const deltaX = this.touch.x - x
+      const deltaY = this.touch.y - y
+
+      // If the user has dragged more than the current slides width, reset the
+      // touch point and silently update the current slide
+      if (this.opts.vertical && Math.abs(deltaY) > this.getOuterHeight(this.slides[this._current])) {
+        this.touch.y = y
+        if (deltaY < 0) {
+          this._current = this._current - this.opts.slidesPerView
+        } else {
+          this._current = this._current + this.opts.slidesPerView
+        }
+      }
+
+      if (!this.opts.vertical && Math.abs(deltaX) > this.getOuterWidth(this.slides[this._current])) {
+        this.touch.x = x
+        if (deltaX < 0) {
+          this._current = this._current - this.opts.slidesPerView
+        } else {
+          this._current = this._current + this.opts.slidesPerView
+        }
+      }
+
+      if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
+        this.offsetTransition(deltaY)
+      }
+
+      if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
+        this.offsetTransition(deltaX)
+      }
+
+      this.touchEndHandler = setTimeout(this.handleTouchEnd.bind(this, e), 300)
+    }
+  }
+
+  /**
+   * Convert mousemove events to touchmove events
+   *
+   * @param {MousemoveEvent} e
+   */
+  @bind
+  handleMouseMove (e) {
+    e.touches = [{ clientX: e.clientX, clientY: e.clientY }]
+    return this.handleTouchMove(e)
+  }
+
+  /**
+   * Handle touchend events on the container
+   *
+   * @param {TouchEvent} e
+   */
+  @bind
+  handleTouchEnd (e) {
     // If a touch hasn't been recorded, we can't calculate the distance,
     // so we ignore the movement
     if (!this.touch) {
@@ -388,13 +479,42 @@ export default class MagicRoundabout {
     const deltaX = this.touch.x - x
     const deltaY = this.touch.y - y
 
+    this.touch = null
+
+    // Reset transition timing
+    this.wrapper.style.transitionDelay = null
+    this.wrapper.style.transitionDuration = null
+
     if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
+      if (this.opts.draggable) {
+        if (Math.abs(deltaY) > (this.getOuterHeight(this.slides[this._current]) / 2)) {
+          return this.handleDeltaChange(e, deltaY, false)
+        }
+      }
+
       return this.handleDeltaChange(e, deltaY, false)
     }
 
     if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (this.opts.draggable) {
+        if (Math.abs(deltaX) > (this.getOuterWidth(this.slides[this._current]) / 2)) {
+          return this.handleDeltaChange(e, deltaX, false)
+        }
+      }
+
       return this.handleDeltaChange(e, deltaX, false)
     }
+  }
+
+  /**
+   * Convert mouseup events to touchend events
+   *
+   * @param {MouseupEvent} e
+   */
+  @bind
+  handleMouseUp (e) {
+    e.touches = [{ clientX: e.clientX, clientY: e.clientY }]
+    return this.handleTouchEnd(e)
   }
 
   /**
@@ -415,13 +535,6 @@ export default class MagicRoundabout {
 
     const n = this.current
 
-    const atStart = distance < -25 && n === 1
-    const atEnd = distance > 25 && n === this.slides.length
-
-    if (atStart || atEnd) {
-      return
-    }
-
     this.transitioning = true
 
     e.stopPropagation()
@@ -435,8 +548,6 @@ export default class MagicRoundabout {
     if (distance < 0) {
       this.current = n - this.opts.slidesPerView
     }
-
-    this.touch = null
 
     if (preventInteraction) {
       setTimeout(() => {
@@ -493,11 +604,11 @@ export default class MagicRoundabout {
   }
 
   /**
-   * Transition to the current slide
+   * Get the correct transition offset for the current slide
+   *
+   * @return Number
    */
-  @bind
-  transition () {
-    const axis = this.opts.vertical ? 'translateY' : 'translateX'
+  getTransitionOffset () {
     const size = this.opts.vertical ? this.getOuterHeight : this.getOuterWidth
     const innerSize = this.opts.vertical ? this.getInnerHeight : this.getInnerWidth
 
@@ -534,8 +645,34 @@ export default class MagicRoundabout {
       }
     }
 
+    return offset * -1
+  }
+
+  /**
+   * Transition to the current slide
+   */
+  @bind
+  transition () {
+    const axis = this.opts.vertical ? 'translateY' : 'translateX'
+
     requestAnimationFrame(t => {
-      this.wrapper.style.transform = `${axis}(${offset * -1}px)`
+      this.wrapper.style.transform = `${axis}(${this.getTransitionOffset()}px)`
+    })
+  }
+
+  /**
+   * Offset the current transition position by the current pixel amount
+   *
+   * @param {Number} distance
+   */
+  @bind
+  offsetTransition (distance) {
+    const axis = this.opts.vertical ? 'translateY' : 'translateX'
+    this.wrapper.style.transitionDelay = '0s'
+    this.wrapper.style.transitionDuration = '0s'
+
+    requestAnimationFrame(t => {
+      this.wrapper.style.transform = `${axis}(${this.getTransitionOffset() - distance}px)`
     })
   }
 
