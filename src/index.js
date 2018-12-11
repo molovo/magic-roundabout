@@ -608,6 +608,7 @@ export default class MagicRoundabout {
    *
    * @return Number
    */
+  @bind
   getTransitionOffset () {
     const size = this.opts.vertical ? this.getOuterHeight : this.getOuterWidth
     const innerSize = this.opts.vertical ? this.getInnerHeight : this.getInnerWidth
