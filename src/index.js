@@ -254,8 +254,8 @@ export default class MagicRoundabout {
       this.transitioning = false
 
       setTimeout(() => {
-        this.wrapper.style.transitionDelay = null
-        this.wrapper.style.transitionDuration = null
+        this.wrapper.style.transitionDelay = ''
+        this.wrapper.style.transitionDuration = ''
       }, 50)
     }, delayFloat + durationFloat)
   }
