@@ -1,4 +1,4 @@
-import { bind } from 'decko'
+import { bind, debounce } from 'decko'
 
 /**
  * A tiny JavaScript carousel
@@ -169,7 +169,7 @@ export default class MagicRoundabout {
 
     if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
       this.applyClasses(this.duplicatesAppend, this._current - this.slides.length)
-      this.applyClasses(this.duplicatesPrepend, this._current + this.slides.length - this.duplicatesPrepend.length - 1)
+      this.applyClasses(this.duplicatesPrepend, this.duplicatesPrepend.length - (this.slides.length - (this._current + this.slides.length)))
     }
 
     if (this.opts.auto) {
@@ -177,6 +177,57 @@ export default class MagicRoundabout {
         this.current = this.current + this.opts.slidesPerView
       }, this.opts.delay)
     }
+  }
+
+  /**
+   * @return {HTMLElement}
+   */
+  get currentSlide () {
+    if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+      if (this._current >= this.slides.length) {
+        return this.duplicatesAppend[this._current - this.slides.length]
+      }
+
+      if (this._current < 0) {
+        return this.duplicatesPrepend[this.duplicatesPrepend.length - (this.slides.length - (this._current + this.slides.length))]
+      }
+    }
+
+    return this.slides[this._current]
+  }
+
+  /**
+   * @return {HTMLElement}
+   */
+  get previousSlide () {
+    if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+      if (this._current - 1 >= this.slides.length) {
+        return this.duplicatesAppend[this._current - this.slides.length - 1]
+      }
+
+      if (this._current - 1 < 0) {
+        return this.duplicatesPrepend[this.duplicatesPrepend.length - (this.slides.length - (this._current + this.slides.length)) - 1]
+      }
+    }
+
+    return this.slides[this._current - 1]
+  }
+
+  /**
+   * @return {HTMLElement}
+   */
+  get nextSlide () {
+    if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+      if (this._current + 1 >= this.slides.length) {
+        return this.duplicatesAppend[this._current - this.slides.length + 1]
+      }
+
+      if (this._current + 1 < 0) {
+        return this.duplicatesPrepend[this.duplicatesPrepend.length - (this.slides.length - (this._current + this.slides.length)) + 1]
+      }
+    }
+
+    return this.slides[this._current + 1]
   }
 
   /**
@@ -291,8 +342,8 @@ export default class MagicRoundabout {
       this.container.addEventListener('wheel', this.handleScroll)
     }
 
-    // Handle swipe events
-    if (this.opts.touch) {
+    // Handle swipe/drag events
+    if (this.opts.touch || this.opts.draggable) {
       this.container.addEventListener('touchstart', this.handleTouchStart)
       this.container.addEventListener('touchmove', this.handleTouchMove)
       this.container.addEventListener('mousedown', this.handleMouseDown)
@@ -309,7 +360,9 @@ export default class MagicRoundabout {
     if (this.opts.click) {
       const fn = slide => {
         slide.addEventListener('click', e => {
-          this.current = slide.dataset.index
+          if (!this.dragging) {
+            this.current = slide.dataset.index
+          }
         })
       }
       this.slides.forEach(fn)
@@ -410,36 +463,53 @@ export default class MagicRoundabout {
 
       const deltaX = this.touch.x - x
       const deltaY = this.touch.y - y
-
-      // If the user has dragged more than the current slides width, reset the
-      // touch point and silently update the current slide
-      if (this.opts.vertical && Math.abs(deltaY) > this.getOuterHeight(this.slides[this._current])) {
-        this.touch.y = y
-        if (deltaY < 0) {
-          this._current = this._current - this.opts.slidesPerView
-        } else {
-          this._current = this._current + this.opts.slidesPerView
-        }
-      }
-
-      if (!this.opts.vertical && Math.abs(deltaX) > this.getOuterWidth(this.slides[this._current])) {
-        this.touch.x = x
-        if (deltaX < 0) {
-          this._current = this._current - this.opts.slidesPerView
-        } else {
-          this._current = this._current + this.opts.slidesPerView
-        }
-      }
+      let distance
 
       if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
-        this.offsetTransition(deltaY)
+        distance = deltaY
       }
 
       if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
-        this.offsetTransition(deltaX)
+        distance = deltaX
       }
 
-      this.touchEndHandler = setTimeout(this.handleTouchEnd.bind(this, e), 300)
+      if (Math.abs(distance) > 25) {
+        this.dragging = true
+      }
+
+      this.offsetTransition(distance)
+
+      // If the user has dragged more than the current slides width, reset the
+      // touch point and silently update the current slide
+      const threshold = (() => {
+        let slide = this.currentSlide
+        if (distance < 0) {
+          slide = this.previousSlide
+        }
+
+        if (slide) {
+          if (this.opts.vertical) {
+            return this.getOuterHeight(slide)
+          }
+
+          return this.getOuterWidth(slide)
+        }
+
+        return 0
+      })()
+
+
+      if (Math.abs(distance) > threshold) {
+        if (distance > 0) {
+          this._current = this._current + 1
+        }
+        if (distance < 0) {
+          this._current = this._current - 1
+        }
+
+        this.touch.x = x
+        this.touch.y = y
+      }
     }
   }
 
@@ -486,22 +556,10 @@ export default class MagicRoundabout {
     this.wrapper.style.transitionDuration = null
 
     if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
-      if (this.opts.draggable) {
-        if (Math.abs(deltaY) > (this.getOuterHeight(this.slides[this._current]) / 2)) {
-          return this.handleDeltaChange(e, deltaY, false)
-        }
-      }
-
       return this.handleDeltaChange(e, deltaY, false)
     }
 
     if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
-      if (this.opts.draggable) {
-        if (Math.abs(deltaX) > (this.getOuterWidth(this.slides[this._current]) / 2)) {
-          return this.handleDeltaChange(e, deltaX, false)
-        }
-      }
-
       return this.handleDeltaChange(e, deltaX, false)
     }
   }
@@ -541,12 +599,41 @@ export default class MagicRoundabout {
     e.preventDefault()
     e.cancelBubble = true
 
-    if (distance > 0) {
-      this.current = n + this.opts.slidesPerView
-    }
+    if (this.opts.draggable) {
+      const threshold = (() => {
+        let slide = this.currentSlide
+        if (distance < 0) {
+          slide = this.previousSlide
+        }
 
-    if (distance < 0) {
-      this.current = n - this.opts.slidesPerView
+        if (slide) {
+          if (this.opts.vertical) {
+            return this.getInnerHeight(slide) / 2
+          }
+
+          return this.getInnerWidth(slide) / 2
+        }
+
+        return 0
+      })()
+
+      if (Math.abs(distance) > threshold) {
+        if (distance > 0) {
+          this.current = n + this.opts.slidesPerView
+        }
+
+        if (distance < 0) {
+          this.current = n - this.opts.slidesPerView
+        }
+      }
+    } else {
+      if (distance > 0) {
+        this.current = n + this.opts.slidesPerView
+      }
+
+      if (distance < 0) {
+        this.current = n - this.opts.slidesPerView
+      }
     }
 
     if (preventInteraction) {
@@ -556,6 +643,10 @@ export default class MagicRoundabout {
 
       return false
     }
+
+    setTimeout(() => {
+      this.dragging = false
+    }, 50)
 
     this.transitioning = false
 
@@ -656,9 +747,7 @@ export default class MagicRoundabout {
   transition () {
     const axis = this.opts.vertical ? 'translateY' : 'translateX'
 
-    requestAnimationFrame(t => {
-      this.wrapper.style.transform = `${axis}(${this.getTransitionOffset()}px)`
-    })
+    this.wrapper.style.transform = `${axis}(${this.getTransitionOffset()}px)`
   }
 
   /**
@@ -672,9 +761,7 @@ export default class MagicRoundabout {
     this.wrapper.style.transitionDelay = '0s'
     this.wrapper.style.transitionDuration = '0s'
 
-    requestAnimationFrame(t => {
-      this.wrapper.style.transform = `${axis}(${this.getTransitionOffset() - distance}px)`
-    })
+    this.wrapper.style.transform = `${axis}(${this.getTransitionOffset() - distance}px)`
   }
 
   /**
