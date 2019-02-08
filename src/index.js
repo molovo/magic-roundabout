@@ -627,6 +627,8 @@ export default class MagicRoundabout {
         if (distance < 0) {
           this.current = n - this.opts.slidesPerView
         }
+      } else {
+        this.current = this.current
       }
     } else {
       if (distance > 0) {
