@@ -714,8 +714,12 @@ export default class MagicRoundabout {
       })
     }
 
-    for (var i = 0; i < this._current; i++) {
+    for (let i = 0; i < Math.min(this._current, this.slides.length); i++) {
       offset += size(this.slides[i])
+    }
+
+    for (let j = 0; j < this._current - this.slides.length; j++) {
+      offset += size(this.duplicatesPrepend[j])
     }
 
     if (this.opts.center && !this.opts.limit) {
