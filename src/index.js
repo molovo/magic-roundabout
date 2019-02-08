@@ -135,7 +135,7 @@ export default class MagicRoundabout {
         if (!this.opts.duplicateSlidesWhenLooping) {
           i = this.slides.length - this.opts.slidesPerView + 1
         } else {
-          this.changeInstantly(this.slides.length)
+          this.changeInstantly(Math.min(i + this.slides.length, this.slides.length + this.duplicatesAppend.length))
         }
       } else {
         i = 1
@@ -147,7 +147,7 @@ export default class MagicRoundabout {
         if (!this.opts.duplicateSlidesWhenLooping) {
           i = 1
         } else {
-          this.changeInstantly(1)
+          this.changeInstantly(Math.max(i - this.slides.length, 1 - this.duplicatesPrepend.length))
         }
       } else {
         i = this.slides.length - (i % this.opts.slidesPerView)
