@@ -57,7 +57,15 @@ export default class MagicRoundabout {
    */
   constructor (target, opts) {
     if (typeof target === 'string') {
-      target = document.querySelector(target)
+      this.container = document.querySelector(target)
+
+      if (!this.container) {
+        throw new TypeError('selector matched no elements')
+      }
+    } else if (target instanceof HTMLElement) {
+      this.container = target
+    } else {
+      throw new TypeError('target must be an instance of "HTMLElement" or a valid selector')
     }
 
     this.opts = {
@@ -65,7 +73,6 @@ export default class MagicRoundabout {
       ...opts
     }
 
-    this.container = target
     this.wrapper = this.container.querySelector('.slideshow__slides')
 
     // Some HTML caching systems may leave duplicated slides in place when the
