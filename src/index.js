@@ -31,14 +31,14 @@ export default class MagicRoundabout {
   /**
    * The real index of the current slide
    *
-   * @type {int}
+   * @type {Number}
    */
   _current = 0
 
   /**
    * The width of the slideshow container
    *
-   * @type {int}
+   * @type {Number}
    */
   width = null
 
@@ -120,7 +120,7 @@ export default class MagicRoundabout {
   /**
    * Get the current slide index
    *
-   * @return {int}
+   * @return {Number}
    */
   get current () {
     return this._current + 1
@@ -129,7 +129,7 @@ export default class MagicRoundabout {
   /**
    * Set the current slide index
    *
-   * @param {int} i
+   * @param {Number} i
    */
   set current (i) {
     let fn
@@ -244,7 +244,7 @@ export default class MagicRoundabout {
    * and the surrounding next and previous slides
    *
    * @param {Array} elements
-   * @param {int} i
+   * @param {Number} i
    */
   @bind
   applyClasses (elements = [], i) {
@@ -293,7 +293,7 @@ export default class MagicRoundabout {
    * Trigger a delayed instant transition, to allow us to silently flick from
    * a duplicated slide to its corresponding slide in the main list
    *
-   * @param {int} i
+   * @param {Number} i
    */
   @bind
   changeInstantly (i) {
@@ -302,9 +302,9 @@ export default class MagicRoundabout {
     this.transitioning = true
 
     const delay = getComputedStyle(this.wrapper).transitionDelay
-    const delayFloat = parseFloat(delay, 10) * 1000
+    const delayFloat = parseFloat(delay) * 1000
     const duration = getComputedStyle(this.wrapper).transitionDuration
-    const durationFloat = parseFloat(duration, 10) * 1000
+    const durationFloat = parseFloat(duration) * 1000
 
     setTimeout(() => {
       this.wrapper.style.transitionDelay = '0s'
@@ -324,8 +324,6 @@ export default class MagicRoundabout {
    * Clear a slide state completely
    *
    * @param {NodeList|Array} slides
-   *
-   * @return {NodeList|Array}
    */
   @bind
   clearState (slides) {
@@ -433,7 +431,7 @@ export default class MagicRoundabout {
   /**
    * Convert mousedown events to touchstart events
    *
-   * @param {MousedownEvent} e
+   * @param {MouseEvent} e
    */
   @bind
   handleMouseDown (e) {
@@ -525,7 +523,7 @@ export default class MagicRoundabout {
   /**
    * Convert mousemove events to touchmove events
    *
-   * @param {MousemoveEvent} e
+   * @param {MouseEvent} e
    */
   @bind
   handleMouseMove (e) {
@@ -536,7 +534,7 @@ export default class MagicRoundabout {
   /**
    * Handle touchend events on the container
    *
-   * @param {TouchEvent} e
+   * @param {TouchEvent|MouseEvent} e
    */
   @bind
   handleTouchEnd (e) {
@@ -576,7 +574,7 @@ export default class MagicRoundabout {
   /**
    * Convert mouseup events to touchend events
    *
-   * @param {MouseupEvent} e
+   * @param {MouseEvent} e
    */
   @bind
   handleMouseUp (e) {
@@ -587,9 +585,9 @@ export default class MagicRoundabout {
   /**
    * Handle a swipe or scroll interaction
    *
-   * @param {WheelEvent|TouchEvent} e
-   * @param {int} distance
-   * @param {bool} preventInteraction
+   * @param {WheelEvent|TouchEvent|MouseEvent} e
+   * @param {Number} distance
+   * @param {Boolean} preventInteraction
    */
   @bind
   handleDeltaChange (e, distance, preventInteraction = false) {
@@ -784,7 +782,7 @@ export default class MagicRoundabout {
    *
    * @param {HTMLElement} el
    *
-   * @return {float}
+   * @return {Number}
    */
   @bind
   getOuterWidth (el) {
@@ -798,7 +796,7 @@ export default class MagicRoundabout {
    *
    * @param {HTMLElement} el
    *
-   * @return {float}
+   * @return {Number}
    */
   @bind
   getOuterHeight (el) {
@@ -812,7 +810,7 @@ export default class MagicRoundabout {
    *
    * @param {HTMLElement} el
    *
-   * @return {float}
+   * @return {Number}
    */
   @bind
   getInnerWidth (el) {
@@ -824,7 +822,7 @@ export default class MagicRoundabout {
    *
    * @param {HTMLElement} el
    *
-   * @return {float}
+   * @return {Number}
    */
   @bind
   getInnerHeight (el) {
@@ -834,7 +832,7 @@ export default class MagicRoundabout {
   /**
    * Check if the slider is currently within the viewport
    *
-   * @return {bool}
+   * @return {Boolean}
    */
   @bind
   isInViewport () {
