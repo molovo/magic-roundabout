@@ -351,6 +351,7 @@ export default class MagicRoundabout {
       this.container.addEventListener('mousedown', this.handleMouseDown)
       this.container.addEventListener('mousemove', this.handleMouseMove)
       this.container.addEventListener('mouseup', this.handleMouseUp)
+      this.container.addEventListener('mouseleave', this.handleMouseUp)
     }
 
     // Handle keyboard events
