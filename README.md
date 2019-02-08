@@ -93,6 +93,9 @@ const magicRoundabout = new MagicRoundabout('#your-element', {
   // When auto == true, the time between transitions
   delay: 10000,
 
+  // If true, the user can click-and-drag or swipe-and-drag the slideshow
+  draggable: false,
+
   // If true, the arrow keys will control the slider while it is in the viewport
   keys: true,
 
