@@ -1,4 +1,4 @@
-import { bind, debounce } from 'decko'
+import { bind } from 'decko'
 
 /**
  * A tiny JavaScript carousel
@@ -83,7 +83,7 @@ export default class MagicRoundabout {
     if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
       this.duplicatesAppend = this.slides.slice(0, this.opts.duplicateSlidesCount).map(slide => slide.cloneNode(true))
       for (let i = 0; i < this.duplicatesAppend.length; i++) {
-        const duplicate = this.duplicatesAppend[i];
+        const duplicate = this.duplicatesAppend[i]
         duplicate.classList.add('slideshow__slide--duplicate')
         duplicate.dataset.index = parseInt(duplicate.dataset.index) + this.slides.length
         this.wrapper.appendChild(duplicate)
@@ -91,7 +91,7 @@ export default class MagicRoundabout {
 
       this.duplicatesPrepend = this.slides.slice(0 - this.opts.duplicateSlidesCount).map(slide => slide.cloneNode(true))
       for (let j = this.duplicatesPrepend.length - 1; j >= 0; j--) {
-        const duplicate = this.duplicatesPrepend[j];
+        const duplicate = this.duplicatesPrepend[j]
         duplicate.classList.add('slideshow__slide--duplicate')
         duplicate.dataset.index = parseInt(duplicate.dataset.index) - this.slides.length
         this.wrapper.insertBefore(duplicate, this.wrapper.childNodes[0])
@@ -500,7 +500,6 @@ export default class MagicRoundabout {
 
         return 0
       })()
-
 
       if (Math.abs(distance) > threshold) {
         if (distance > 0) {
