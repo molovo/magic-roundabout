@@ -23,3 +23,7 @@ deploy:
   on:
     tags: true
     repo: molovo/magic-roundabout
+notifications:
+  email: false
+  slack:
+    secure: eXpsqNeq6eHTaD6hbGgmSYp+0N6Kf5u44AbzmUGVchdO8t5mwn97tB2aoKd81/DtQmqGdqJ8Pxz7876Ce/SoA4rm4alJTNFpwnhbqoaHi4w1ubowuQ4OfQWrK0CZ97RiziUpEJG8OGQOeXjaYR7WMzuOBY+1XVfAgkuGU72trJiss5P1pXTckumIvgYy1qtMVmL8oX/BzpUhtqNgZHlDXiBx7nbqOGivfVECkWHDUakDOfffD5m3cKVH8TvcJsBHwB1g7dCk7Se2PDGP+wdKWx1mdpJbjB8BHs5zyKNtzDMM4IM/oQ7FrE46Kl5cOAAcgZ3QKWTyWn+hfIUwKOAtvz1UMF7zXN4qKEsiU18ZU8iO7QQFlkF+kFJt/+Owa/eXu6eJ3eEQDUsy1/cz/AImLD+F0IX1TVOYYdqI0abSTGW0jJd9+HWl16dpC1QDf44q0PJaH7tHU/+V9gX9fYiOLEHX/EHUOpX4uL6N+UP+9VG6i3b5MNhKZbBLQ57tqK9qyXwscPqlgWMPgat5RLLe+DhfFFiQUXOoUpcx9df5JPyYaEddf0/PTKLgTQaDco8HT6Sm4hpDA/nJJmNApRwr9WtEK7RBC3itrHWlMR3zQJUQiHzDnEooO59cx5z5bYX7Wwen2Mct0QZsZUBzhTFBJlvriAvl1P+1XSQbbPNnAvc=
