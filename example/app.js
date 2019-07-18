@@ -1173,8 +1173,6 @@ var Lethargy = (_class = function () {
         this.lastDownDeltas.shift();
         return this.isInertia(-1);
       }
-
-      return false;
     }
 
     /**

@@ -67,8 +67,6 @@ export default class Lethargy {
       this.lastDownDeltas.shift()
       return this.isInertia(-1)
     }
-
-    return false
   }
 
   /**
