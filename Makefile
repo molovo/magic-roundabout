@@ -1,6 +1,6 @@
 build:
 	cp -R lib src
-	babel src --out-dir lib
+	node_modules/.bin/babel src --out-dir lib
 
 unbuild:
 	rm -rf lib
