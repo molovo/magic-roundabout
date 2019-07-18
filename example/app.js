@@ -1,4 +1,4 @@
-(function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(require,module,exports){
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -78,6 +78,12 @@ var _desc, _value, _class;
 
 var _decko = require('decko');
 
+var _lethargy = require('./lethargy');
+
+var _lethargy2 = _interopRequireDefault(_lethargy);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
@@ -109,6 +115,8 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
   return desc;
 }
 
+var lethargy = new _lethargy2.default();
+
 /**
  * A tiny JavaScript carousel
  */
@@ -125,7 +133,7 @@ var MagicRoundabout = (_class = function () {
   /**
    * The width of the slideshow container
    *
-   * @type {int}
+   * @type {Number}
    */
 
   /**
@@ -134,8 +142,6 @@ var MagicRoundabout = (_class = function () {
    * @type {object}
    */
   function MagicRoundabout(target, opts) {
-    var _this = this;
-
     _classCallCheck(this, MagicRoundabout);
 
     this.opts = {
@@ -144,6 +150,7 @@ var MagicRoundabout = (_class = function () {
       center: false,
       click: true,
       delay: 10000,
+      draggable: false,
       duplicateSlidesWhenLooping: false,
       duplicateSlidesCount: 1,
       keys: true,
@@ -158,7 +165,7 @@ var MagicRoundabout = (_class = function () {
       /**
        * The real index of the current slide
        *
-       * @type {int}
+       * @type {Number}
        */
     };
     this._current = 0;
@@ -166,31 +173,53 @@ var MagicRoundabout = (_class = function () {
     this.touch = null;
 
     if (typeof target === 'string') {
-      target = document.querySelector(target);
+      this.container = document.querySelector(target);
+
+      if (!this.container) {
+        throw new TypeError('selector matched no elements');
+      }
+    } else if (target instanceof HTMLElement) {
+      this.container = target;
+    } else {
+      throw new TypeError('target must be an instance of "HTMLElement" or a valid selector');
     }
 
     this.opts = _extends({}, this.opts, opts);
 
-    this.container = target;
     this.wrapper = this.container.querySelector('.slideshow__slides');
+
+    // Some HTML caching systems may leave duplicated slides in place when the
+    // page loads. We clear them here to prevent duplicating the duplicates
+    this.wrapper.querySelectorAll('.slideshow__slide--duplicate').forEach(function (slide) {
+      slide.parentNode.removeChild(slide);
+    });
+
     this.slides = Array.from(this.container.querySelectorAll('.slideshow__slide'));
+    var i = 1;
+    this.slides.forEach(function (slide) {
+      slide.dataset.index = i++;
+    });
 
     if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
       this.duplicatesAppend = this.slides.slice(0, this.opts.duplicateSlidesCount).map(function (slide) {
         return slide.cloneNode(true);
       });
-      this.duplicatesAppend.forEach(function (duplicate) {
+      for (var _i = 0; _i < this.duplicatesAppend.length; _i++) {
+        var duplicate = this.duplicatesAppend[_i];
         duplicate.classList.add('slideshow__slide--duplicate');
-        _this.wrapper.appendChild(duplicate);
-      });
+        duplicate.dataset.index = parseInt(duplicate.dataset.index) + this.slides.length;
+        this.wrapper.appendChild(duplicate);
+      }
 
       this.duplicatesPrepend = this.slides.slice(0 - this.opts.duplicateSlidesCount).map(function (slide) {
         return slide.cloneNode(true);
       });
-      this.duplicatesPrepend.reverse().forEach(function (duplicate) {
-        duplicate.classList.add('slideshow__slide--duplicate');
-        _this.wrapper.insertBefore(duplicate, _this.wrapper.childNodes[0]);
-      });
+      for (var j = this.duplicatesPrepend.length - 1; j >= 0; j--) {
+        var _duplicate = this.duplicatesPrepend[j];
+        _duplicate.classList.add('slideshow__slide--duplicate');
+        _duplicate.dataset.index = parseInt(_duplicate.dataset.index) - this.slides.length;
+        this.wrapper.insertBefore(_duplicate, this.wrapper.childNodes[0]);
+      }
     }
 
     if (this.opts.buttons) {
@@ -208,7 +237,7 @@ var MagicRoundabout = (_class = function () {
   /**
    * Get the current slide index
    *
-   * @return {int}
+   * @return {Number}
    */
 
 
@@ -221,16 +250,9 @@ var MagicRoundabout = (_class = function () {
 
   _createClass(MagicRoundabout, [{
     key: 'applyClasses',
-
-
-    /**
-     * Apply classes to the active (or its equivalent duplicate) slide,
-     * and the surrounding next and previous slides
-     *
-     * @param {Array} elements
-     * @param {int} i
-     */
     value: function applyClasses() {
+      var _this = this;
+
       var elements = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
       var i = arguments[1];
 
@@ -238,46 +260,48 @@ var MagicRoundabout = (_class = function () {
         return;
       }
 
-      var k = this.opts.slidesPerView;
-      var selected = [];
+      requestAnimationFrame(function (t) {
+        var k = _this.opts.slidesPerView;
+        var selected = [];
 
-      if (i >= 0) {
-        elements.slice(i, i + k).forEach(function (slide) {
-          slide.classList.remove('slideshow__slide--next');
-          slide.classList.remove('slideshow__slide--prev');
-          slide.classList.add('slideshow__slide--active');
-          selected.push(slide);
-        });
-      }
+        if (i >= 0) {
+          elements.slice(i, i + k).forEach(function (slide) {
+            slide.classList.remove('slideshow__slide--next');
+            slide.classList.remove('slideshow__slide--prev');
+            slide.classList.add('slideshow__slide--active');
+            selected.push(slide);
+          });
+        }
 
-      if (i >= k) {
-        elements.slice(i - k, i).forEach(function (slide) {
-          slide.classList.remove('slideshow__slide--next');
-          slide.classList.remove('slideshow__slide--active');
-          slide.classList.add('slideshow__slide--prev');
-          selected.push(slide);
-        });
-      }
+        if (i >= k) {
+          elements.slice(i - k, i).forEach(function (slide) {
+            slide.classList.remove('slideshow__slide--next');
+            slide.classList.remove('slideshow__slide--active');
+            slide.classList.add('slideshow__slide--prev');
+            selected.push(slide);
+          });
+        }
 
-      if (i + k >= 0) {
-        elements.slice(i + k, i + k + k).forEach(function (slide) {
-          slide.classList.remove('slideshow__slide--active');
-          slide.classList.remove('slideshow__slide--prev');
-          slide.classList.add('slideshow__slide--next');
-          selected.push(slide);
-        });
-      }
+        if (i + k >= 0) {
+          elements.slice(i + k, i + k + k).forEach(function (slide) {
+            slide.classList.remove('slideshow__slide--active');
+            slide.classList.remove('slideshow__slide--prev');
+            slide.classList.add('slideshow__slide--next');
+            selected.push(slide);
+          });
+        }
 
-      this.clearState(elements.filter(function (slide) {
-        return selected.indexOf(slide) === -1;
-      }));
+        _this.clearState(elements.filter(function (slide) {
+          return selected.indexOf(slide) === -1;
+        }));
+      });
     }
 
     /**
      * Trigger a delayed instant transition, to allow us to silently flick from
      * a duplicated slide to its corresponding slide in the main list
      *
-     * @param {int} i
+     * @param {Number} i
      */
 
   }, {
@@ -285,20 +309,25 @@ var MagicRoundabout = (_class = function () {
     value: function changeInstantly(i) {
       var _this2 = this;
 
+      // Prevent interaction to avoid the user navigating to a slide that does
+      // not exist
+      this.transitioning = true;
+
       var delay = getComputedStyle(this.wrapper).transitionDelay;
-      var delayFloat = parseFloat(delay, 10) * 1000;
+      var delayFloat = parseFloat(delay) * 1000;
       var duration = getComputedStyle(this.wrapper).transitionDuration;
-      var durationFloat = parseFloat(duration, 10) * 1000;
+      var durationFloat = parseFloat(duration) * 1000;
 
       setTimeout(function () {
         _this2.wrapper.style.transitionDelay = '0s';
         _this2.wrapper.style.transitionDuration = '0s';
 
         _this2.current = i;
+        _this2.transitioning = false;
 
         setTimeout(function () {
-          _this2.wrapper.style.transitionDelay = null;
-          _this2.wrapper.style.transitionDuration = null;
+          _this2.wrapper.style.transitionDelay = '';
+          _this2.wrapper.style.transitionDuration = '';
         }, 50);
       }, delayFloat + durationFloat);
     }
@@ -307,17 +336,17 @@ var MagicRoundabout = (_class = function () {
      * Clear a slide state completely
      *
      * @param {NodeList|Array} slides
-     *
-     * @return {NodeList|Array}
      */
 
   }, {
     key: 'clearState',
     value: function clearState(slides) {
-      slides.forEach(function (slide) {
-        slide.classList.remove('slideshow__slide--active');
-        slide.classList.remove('slideshow__slide--next');
-        slide.classList.remove('slideshow__slide--prev');
+      requestAnimationFrame(function (t) {
+        slides.forEach(function (slide) {
+          slide.classList.remove('slideshow__slide--active');
+          slide.classList.remove('slideshow__slide--next');
+          slide.classList.remove('slideshow__slide--prev');
+        });
       });
     }
 
@@ -338,10 +367,14 @@ var MagicRoundabout = (_class = function () {
         this.container.addEventListener('wheel', this.handleScroll);
       }
 
-      // Handle swipe events
-      if (this.opts.touch) {
+      // Handle swipe/drag events
+      if (this.opts.touch || this.opts.draggable) {
         this.container.addEventListener('touchstart', this.handleTouchStart);
         this.container.addEventListener('touchmove', this.handleTouchMove);
+        this.container.addEventListener('mousedown', this.handleMouseDown);
+        this.container.addEventListener('mousemove', this.handleMouseMove);
+        this.container.addEventListener('mouseup', this.handleMouseUp);
+        this.container.addEventListener('mouseleave', this.handleMouseUp);
       }
 
       // Handle keyboard events
@@ -351,11 +384,19 @@ var MagicRoundabout = (_class = function () {
 
       // Slide to clicked slide
       if (this.opts.click) {
-        this.slides.forEach(function (slide) {
+        var fn = function fn(slide) {
           slide.addEventListener('click', function (e) {
-            _this3.current = Array.from(_this3.slides).indexOf(slide) + 1;
+            if (!_this3.dragging) {
+              _this3.current = slide.dataset.index;
+            }
           });
-        });
+        };
+        this.slides.forEach(fn);
+
+        if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+          this.duplicatesAppend.forEach(fn);
+          this.duplicatesPrepend.forEach(fn);
+        }
       }
 
       // Handle pagination buttons
@@ -391,11 +432,11 @@ var MagicRoundabout = (_class = function () {
     key: 'handleScroll',
     value: function handleScroll(e) {
       if (this.opts.vertical && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        return this.handleDeltaChange(e, e.deltaY);
+        return this.handleDeltaChange(e, e.deltaY, true);
       }
 
       if (!this.opts.vertical && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        return this.handleDeltaChange(e, e.deltaX);
+        return this.handleDeltaChange(e, e.deltaX, true);
       }
     }
 
@@ -412,7 +453,20 @@ var MagicRoundabout = (_class = function () {
     }
 
     /**
-     * Handle touchmove events on the container
+     * Convert mousedown events to touchstart events
+     *
+     * @param {MouseEvent} e
+     */
+
+  }, {
+    key: 'handleMouseDown',
+    value: function handleMouseDown(e) {
+      e.touches = [{ clientX: e.clientX, clientY: e.clientY }];
+      return this.handleTouchStart(e);
+    }
+
+    /**
+     * Handle touchend events on the container
      *
      * @param {TouchEvent} e
      */
@@ -420,34 +474,166 @@ var MagicRoundabout = (_class = function () {
   }, {
     key: 'handleTouchMove',
     value: function handleTouchMove(e) {
+      var _this4 = this;
+
+      clearTimeout(this.touchEndHandler);
+
+      // If a touch hasn't been recorded, we can't calculate the distance,
+      // so we ignore the movement
+      if (!this.touch) {
+        return;
+      }
+
+      // If there are multiple touches, ignore them so that we don't
+      // interfere with pinch-to-zoom
+      if (e.touches.length > 1) {
+        return;
+      }
+
+      if (!this.opts.draggable) {
+        this.touchEndHandler = setTimeout(this.handleTouchEnd.bind(this, e), 50);
+        return;
+      }
+
+      if (!this.transitioning) {
+        var x = e.touches[0].clientX;
+        var y = e.touches[0].clientY;
+
+        var deltaX = this.touch.x - x;
+        var deltaY = this.touch.y - y;
+        var distance = void 0;
+
+        if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
+          distance = deltaY;
+        }
+
+        if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
+          distance = deltaX;
+        }
+
+        if (Math.abs(distance) > 25) {
+          this.dragging = true;
+        }
+
+        this.offsetTransition(distance);
+
+        // If the user has dragged more than the current slides width, reset the
+        // touch point and silently update the current slide
+        var threshold = function () {
+          var slide = _this4.currentSlide;
+          if (distance < 0) {
+            slide = _this4.previousSlide;
+          }
+
+          if (slide) {
+            if (_this4.opts.vertical) {
+              return _this4.getOuterHeight(slide);
+            }
+
+            return _this4.getOuterWidth(slide);
+          }
+
+          return 0;
+        }();
+
+        if (Math.abs(distance) > threshold) {
+          if (distance > 0) {
+            this._current = this._current + 1;
+          }
+          if (distance < 0) {
+            this._current = this._current - 1;
+          }
+
+          this.touch.x = x;
+          this.touch.y = y;
+        }
+      }
+    }
+
+    /**
+     * Convert mousemove events to touchmove events
+     *
+     * @param {MouseEvent} e
+     */
+
+  }, {
+    key: 'handleMouseMove',
+    value: function handleMouseMove(e) {
+      e.touches = [{ clientX: e.clientX, clientY: e.clientY }];
+      return this.handleTouchMove(e);
+    }
+
+    /**
+     * Handle touchend events on the container
+     *
+     * @param {TouchEvent|MouseEvent} e
+     */
+
+  }, {
+    key: 'handleTouchEnd',
+    value: function handleTouchEnd(e) {
+      // If a touch hasn't been recorded, we can't calculate the distance,
+      // so we ignore the movement
+      if (!this.touch) {
+        return;
+      }
+
+      // If there are multiple touches, ignore them so that we don't
+      // interfere with pinch-to-zoom
+      if (e.touches.length > 1) {
+        return;
+      }
+
       var x = e.touches[0].clientX;
       var y = e.touches[0].clientY;
 
       var deltaX = this.touch.x - x;
       var deltaY = this.touch.y - y;
 
+      this.touch = null;
+
+      // Reset transition timing
+      this.wrapper.style.transitionDelay = null;
+      this.wrapper.style.transitionDuration = null;
+
       if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
-        return this.handleDeltaChange(e, deltaY);
+        return this.handleDeltaChange(e, deltaY, false);
       }
 
       if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
-        return this.handleDeltaChange(e, deltaX);
+        return this.handleDeltaChange(e, deltaX, false);
       }
+    }
+
+    /**
+     * Convert mouseup events to touchend events
+     *
+     * @param {MouseEvent} e
+     */
+
+  }, {
+    key: 'handleMouseUp',
+    value: function handleMouseUp(e) {
+      e.touches = [{ clientX: e.clientX, clientY: e.clientY }];
+      return this.handleTouchEnd(e);
     }
 
     /**
      * Handle a swipe or scroll interaction
      *
-     * @param {WheelEvent|TouchEvent} e
-     * @param {int} d
+     * @param {WheelEvent|TouchEvent|MouseEvent} e
+     * @param {Number} distance
+     * @param {Boolean} preventInteraction
      */
 
   }, {
     key: 'handleDeltaChange',
-    value: function handleDeltaChange(e, d) {
-      var _this4 = this;
+    value: function handleDeltaChange(e, distance) {
+      var _this5 = this;
 
-      if (this.transitioning) {
+      var preventInteraction = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+      if (lethargy.check(e, this.opts.vertical) === false || this.transitioning) {
         e.stopPropagation();
         e.preventDefault();
         e.cancelBubble = true;
@@ -456,32 +642,69 @@ var MagicRoundabout = (_class = function () {
 
       var n = this.current;
 
-      var atStart = d < -25 && n === 1;
-      var atEnd = d > 25 && n === this.slides.length;
-
-      if (atStart || atEnd) {
-        return;
-      }
-
       this.transitioning = true;
 
       e.stopPropagation();
       e.preventDefault();
       e.cancelBubble = true;
 
-      if (d > 0) {
-        this.current = n + this.opts.slidesPerView;
+      if (this.opts.draggable) {
+        var threshold = function () {
+          var slide = _this5.currentSlide;
+          if (distance < 0) {
+            slide = _this5.previousSlide;
+          }
+
+          if (slide) {
+            if (_this5.opts.vertical) {
+              return _this5.getInnerHeight(slide) / 2;
+            }
+
+            return _this5.getInnerWidth(slide) / 2;
+          }
+
+          return 0;
+        }();
+
+        if (Math.abs(distance) > threshold) {
+          if (distance > 0) {
+            this.current = n + this.opts.slidesPerView;
+          }
+
+          if (distance < 0) {
+            this.current = n - this.opts.slidesPerView;
+          }
+        } else {
+          this.current = this.current;
+        }
+      } else {
+        if (distance > 0) {
+          this.current = n + this.opts.slidesPerView;
+        }
+
+        if (distance < 0) {
+          this.current = n - this.opts.slidesPerView;
+        }
       }
 
-      if (d < 0) {
-        this.current = n - this.opts.slidesPerView;
-      }
+      if (preventInteraction) {
+        var delay = getComputedStyle(this.wrapper).transitionDelay;
+        var delayFloat = parseFloat(delay) * 1000;
+        var duration = getComputedStyle(this.wrapper).transitionDuration;
+        var durationFloat = parseFloat(duration) * 1000;
 
-      this.touch = null;
+        setTimeout(function (t) {
+          _this5.transitioning = false;
+        }, delayFloat + durationFloat);
+
+        return false;
+      }
 
       setTimeout(function () {
-        _this4.transitioning = false;
-      }, 2000);
+        _this5.dragging = false;
+      }, 50);
+
+      this.transitioning = false;
 
       return false;
     }
@@ -530,13 +753,14 @@ var MagicRoundabout = (_class = function () {
     }
 
     /**
-     * Transition to the current slide
+     * Get the correct transition offset for the current slide
+     *
+     * @return Number
      */
 
   }, {
-    key: 'transition',
-    value: function transition() {
-      var axis = this.opts.vertical ? 'translateY' : 'translateX';
+    key: 'getTransitionOffset',
+    value: function getTransitionOffset() {
       var size = this.opts.vertical ? this.getOuterHeight : this.getOuterWidth;
       var innerSize = this.opts.vertical ? this.getInnerHeight : this.getInnerWidth;
 
@@ -548,8 +772,12 @@ var MagicRoundabout = (_class = function () {
         });
       }
 
-      for (var i = 0; i < this._current; i++) {
+      for (var i = 0; i < Math.min(this._current, this.slides.length); i++) {
         offset += size(this.slides[i]);
+      }
+
+      for (var j = 0; j < this._current - this.slides.length; j++) {
+        offset += size(this.duplicatesPrepend[j]);
       }
 
       if (this.opts.center && !this.opts.limit) {
@@ -564,8 +792,8 @@ var MagicRoundabout = (_class = function () {
 
         offset = Math.min(offset, total - this.container.clientWidth);
 
-        if (offset >= total - this.container.clientWidth) {
-          if (this.opts.buttons) {
+        if (this.opts.buttons) {
+          if (offset >= total - this.container.clientWidth) {
             this.buttons.next.classList.add('slideshow__button--disabled');
           } else {
             this.buttons.next.classList.remove('slideshow__button--disabled');
@@ -573,7 +801,35 @@ var MagicRoundabout = (_class = function () {
         }
       }
 
-      this.wrapper.style.transform = axis + '(' + offset * -1 + 'px)';
+      return offset * -1;
+    }
+
+    /**
+     * Transition to the current slide
+     */
+
+  }, {
+    key: 'transition',
+    value: function transition() {
+      var axis = this.opts.vertical ? 'translateY' : 'translateX';
+
+      this.wrapper.style.transform = axis + '(' + this.getTransitionOffset() + 'px)';
+    }
+
+    /**
+     * Offset the current transition position by the current pixel amount
+     *
+     * @param {Number} distance
+     */
+
+  }, {
+    key: 'offsetTransition',
+    value: function offsetTransition(distance) {
+      var axis = this.opts.vertical ? 'translateY' : 'translateX';
+      this.wrapper.style.transitionDelay = '0s';
+      this.wrapper.style.transitionDuration = '0s';
+
+      this.wrapper.style.transform = axis + '(' + (this.getTransitionOffset() - distance) + 'px)';
     }
 
     /**
@@ -581,7 +837,7 @@ var MagicRoundabout = (_class = function () {
      *
      * @param {HTMLElement} el
      *
-     * @return {float}
+     * @return {Number}
      */
 
   }, {
@@ -597,7 +853,7 @@ var MagicRoundabout = (_class = function () {
      *
      * @param {HTMLElement} el
      *
-     * @return {float}
+     * @return {Number}
      */
 
   }, {
@@ -613,7 +869,7 @@ var MagicRoundabout = (_class = function () {
      *
      * @param {HTMLElement} el
      *
-     * @return {float}
+     * @return {Number}
      */
 
   }, {
@@ -627,7 +883,7 @@ var MagicRoundabout = (_class = function () {
      *
      * @param {HTMLElement} el
      *
-     * @return {float}
+     * @return {Number}
      */
 
   }, {
@@ -639,7 +895,7 @@ var MagicRoundabout = (_class = function () {
     /**
      * Check if the slider is currently within the viewport
      *
-     * @return {bool}
+     * @return {Boolean}
      */
 
   }, {
@@ -662,11 +918,11 @@ var MagicRoundabout = (_class = function () {
     /**
      * Set the current slide index
      *
-     * @param {int} i
+     * @param {Number} i
      */
     ,
     set: function set(i) {
-      var _this5 = this;
+      var _this6 = this;
 
       var fn = void 0;
       clearTimeout(this.auto);
@@ -678,7 +934,7 @@ var MagicRoundabout = (_class = function () {
           if (!this.opts.duplicateSlidesWhenLooping) {
             i = this.slides.length - this.opts.slidesPerView + 1;
           } else {
-            this.changeInstantly(this.slides.length);
+            this.changeInstantly(Math.min(i + this.slides.length, this.slides.length + this.duplicatesAppend.length));
           }
         } else {
           i = 1;
@@ -690,7 +946,7 @@ var MagicRoundabout = (_class = function () {
           if (!this.opts.duplicateSlidesWhenLooping) {
             i = 1;
           } else {
-            this.changeInstantly(1);
+            this.changeInstantly(Math.max(i - this.slides.length, 1 - this.duplicatesPrepend.length));
           }
         } else {
           i = this.slides.length - i % this.opts.slidesPerView;
@@ -714,19 +970,268 @@ var MagicRoundabout = (_class = function () {
 
       if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
         this.applyClasses(this.duplicatesAppend, this._current - this.slides.length);
-        this.applyClasses(this.duplicatesPrepend, this._current + this.slides.length - this.duplicatesPrepend.length - 1);
+        this.applyClasses(this.duplicatesPrepend, this.duplicatesPrepend.length - (this.slides.length - (this._current + this.slides.length)));
       }
 
       if (this.opts.auto) {
         this.auto = setTimeout(function () {
-          _this5.current = _this5.current + _this5.opts.slidesPerView;
+          _this6.current = _this6.current + _this6.opts.slidesPerView;
         }, this.opts.delay);
       }
     }
+
+    /**
+     * @return {HTMLElement}
+     */
+
+  }, {
+    key: 'currentSlide',
+    get: function get() {
+      if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+        if (this._current >= this.slides.length) {
+          return this.duplicatesAppend[this._current - this.slides.length];
+        }
+
+        if (this._current < 0) {
+          return this.duplicatesPrepend[this.duplicatesPrepend.length - (this.slides.length - (this._current + this.slides.length))];
+        }
+      }
+
+      return this.slides[this._current];
+    }
+
+    /**
+     * @return {HTMLElement}
+     */
+
+  }, {
+    key: 'previousSlide',
+    get: function get() {
+      if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+        if (this._current - 1 >= this.slides.length) {
+          return this.duplicatesAppend[this._current - this.slides.length - 1];
+        }
+
+        if (this._current - 1 < 0) {
+          return this.duplicatesPrepend[this.duplicatesPrepend.length - (this.slides.length - (this._current + this.slides.length)) - 1];
+        }
+      }
+
+      return this.slides[this._current - 1];
+    }
+
+    /**
+     * @return {HTMLElement}
+     */
+
+  }, {
+    key: 'nextSlide',
+    get: function get() {
+      if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
+        if (this._current + 1 >= this.slides.length) {
+          return this.duplicatesAppend[this._current - this.slides.length + 1];
+        }
+
+        if (this._current + 1 < 0) {
+          return this.duplicatesPrepend[this.duplicatesPrepend.length - (this.slides.length - (this._current + this.slides.length)) + 1];
+        }
+      }
+
+      return this.slides[this._current + 1];
+    }
+
+    /**
+     * Apply classes to the active (or its equivalent duplicate) slide,
+     * and the surrounding next and previous slides
+     *
+     * @param {Array} elements
+     * @param {Number} i
+     */
+
   }]);
 
   return MagicRoundabout;
-}(), (_applyDecoratedDescriptor(_class.prototype, 'setContainerSize', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'setContainerSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleScroll', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleScroll'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleTouchStart', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleTouchStart'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleTouchMove', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleTouchMove'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleDeltaChange', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleDeltaChange'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleKeypress', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleKeypress'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getOuterWidth', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'getOuterWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getOuterHeight', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'getOuterHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getInnerWidth', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'getInnerWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getInnerHeight', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'getInnerHeight'), _class.prototype)), _class);
+}(), (_applyDecoratedDescriptor(_class.prototype, 'applyClasses', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'applyClasses'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'changeInstantly', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'changeInstantly'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clearState', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'clearState'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'registerListeners', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'registerListeners'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'setContainerSize', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'setContainerSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleScroll', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleScroll'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleTouchStart', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleTouchStart'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleMouseDown', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleMouseDown'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleTouchMove', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleTouchMove'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleMouseMove', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleMouseMove'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleTouchEnd', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleTouchEnd'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleMouseUp', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleMouseUp'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleDeltaChange', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleDeltaChange'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'handleKeypress', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'handleKeypress'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getTransitionOffset', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'getTransitionOffset'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'transition', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'transition'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetTransition', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'offsetTransition'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getOuterWidth', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'getOuterWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getOuterHeight', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'getOuterHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getInnerWidth', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'getInnerWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getInnerHeight', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'getInnerHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isInViewport', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'isInViewport'), _class.prototype)), _class);
 exports.default = MagicRoundabout;
+
+},{"./lethargy":4,"decko":2}],4:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _desc, _value, _class;
+
+var _decko = require('decko');
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
+  var desc = {};
+  Object['ke' + 'ys'](descriptor).forEach(function (key) {
+    desc[key] = descriptor[key];
+  });
+  desc.enumerable = !!desc.enumerable;
+  desc.configurable = !!desc.configurable;
+
+  if ('value' in desc || desc.initializer) {
+    desc.writable = true;
+  }
+
+  desc = decorators.slice().reverse().reduce(function (desc, decorator) {
+    return decorator(target, property, desc) || desc;
+  }, desc);
+
+  if (context && desc.initializer !== void 0) {
+    desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
+    desc.initializer = undefined;
+  }
+
+  if (desc.initializer === void 0) {
+    Object['define' + 'Property'](target, property, desc);
+    desc = null;
+  }
+
+  return desc;
+}
+
+// Taken from https://github.com/d4nyll/lethargy,adapted
+// for use as an ES6 module, with support for horizontal scrolling added
+var Lethargy = (_class = function () {
+  /**
+   * @param {Number} stability
+   * @param {Number} sensitivity
+   * @param {Number} tolerance
+   * @param {Number} delay
+   */
+  function Lethargy(stability, sensitivity, tolerance, delay) {
+    _classCallCheck(this, Lethargy);
+
+    this.stability = stability != null ? Math.abs(stability) : 8;
+    this.sensitivity = sensitivity != null ? 1 + Math.abs(sensitivity) : 120;
+    this.tolerance = tolerance != null ? 1 + Math.abs(tolerance) : 1.05;
+    this.delay = delay != null ? delay : 150;
+    this.lastUpDeltas = function () {
+      var i, ref, results;
+      results = [];
+      for (i = 1, ref = this.stability * 2; ref >= 1 ? i <= ref : i >= ref; ref >= 1 ? i++ : i--) {
+        results.push(null);
+      }
+      return results;
+    }.call(this);
+    this.lastDownDeltas = function () {
+      var i, ref, results;
+      results = [];
+      for (i = 1, ref = this.stability * 2; ref >= 1 ? i <= ref : i >= ref; ref >= 1 ? i++ : i--) {
+        results.push(null);
+      }
+      return results;
+    }.call(this);
+    this.deltasTimestamp = function () {
+      var i, ref, results;
+      results = [];
+      for (i = 1, ref = this.stability * 2; ref >= 1 ? i <= ref : i >= ref; ref >= 1 ? i++ : i--) {
+        results.push(null);
+      }
+      return results;
+    }.call(this);
+  }
+
+  /**
+   * @param {MouseEvent} e
+   */
+
+
+  _createClass(Lethargy, [{
+    key: 'check',
+    value: function check(e) {
+      var vertical = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+      var lastDelta;
+      e = e.originalEvent || e;
+      if (e.wheelDelta != null) {
+        lastDelta = e.wheelDelta;
+      } else if (vertical && e.deltaY != null) {
+        lastDelta = e.deltaY * -40;
+      } else if (!vertical && e.deltaX != null) {
+        lastDelta = e.deltaX * -40;
+      } else if (e.detail != null || e.detail === 0) {
+        lastDelta = e.detail * -40;
+      }
+      this.deltasTimestamp.push(Date.now());
+      this.deltasTimestamp.shift();
+      if (lastDelta > 0) {
+        this.lastUpDeltas.push(lastDelta);
+        this.lastUpDeltas.shift();
+        return this.isInertia(1);
+      } else {
+        this.lastDownDeltas.push(lastDelta);
+        this.lastDownDeltas.shift();
+        return this.isInertia(-1);
+      }
+
+      return false;
+    }
+
+    /**
+     * @param {Number} direction
+     */
+
+  }, {
+    key: 'isInertia',
+    value: function isInertia(direction) {
+      var lastDeltas, lastDeltasNew, lastDeltasOld, newAverage, newSum, oldAverage, oldSum;
+      lastDeltas = direction === -1 ? this.lastDownDeltas : this.lastUpDeltas;
+      if (lastDeltas[0] === null) {
+        return direction;
+      }
+      if (this.deltasTimestamp[this.stability * 2 - 2] + this.delay > Date.now() && lastDeltas[0] === lastDeltas[this.stability * 2 - 1]) {
+        return false;
+      }
+      lastDeltasOld = lastDeltas.slice(0, this.stability);
+      lastDeltasNew = lastDeltas.slice(this.stability, this.stability * 2);
+      oldSum = lastDeltasOld.reduce(function (t, s) {
+        return t + s;
+      });
+      newSum = lastDeltasNew.reduce(function (t, s) {
+        return t + s;
+      });
+      oldAverage = oldSum / lastDeltasOld.length;
+      newAverage = newSum / lastDeltasNew.length;
+      if (Math.abs(oldAverage) < Math.abs(newAverage * this.tolerance) && this.sensitivity < Math.abs(newAverage)) {
+        return direction;
+      } else {
+        return false;
+      }
+    }
+
+    /**
+     *
+     */
+
+  }, {
+    key: 'showLastUpDeltas',
+    value: function showLastUpDeltas() {
+      return this.lastUpDeltas;
+    }
+
+    /**
+     *
+     */
+
+  }, {
+    key: 'showLastDownDeltas',
+    value: function showLastDownDeltas() {
+      return this.lastDownDeltas;
+    }
+  }]);
+
+  return Lethargy;
+}(), (_applyDecoratedDescriptor(_class.prototype, 'check', [_decko.bind], Object.getOwnPropertyDescriptor(_class.prototype, 'check'), _class.prototype)), _class);
+exports.default = Lethargy;
 
 },{"decko":2}]},{},[1]);

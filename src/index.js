@@ -1,4 +1,7 @@
 import { bind } from 'decko'
+import Lethargy from './lethargy'
+
+const lethargy = new Lethargy()
 
 /**
  * A tiny JavaScript carousel
@@ -21,7 +24,7 @@ export default class MagicRoundabout {
     keys: true,
     limit: false,
     loop: true,
-    onChange: () => {},
+    onChange: () => { },
     touch: true,
     scroll: true,
     slidesPerView: 1,
@@ -591,7 +594,7 @@ export default class MagicRoundabout {
    */
   @bind
   handleDeltaChange (e, distance, preventInteraction = false) {
-    if (this.transitioning) {
+    if (lethargy.check(e, this.opts.vertical) === false || this.transitioning) {
       e.stopPropagation()
       e.preventDefault()
       e.cancelBubble = true
@@ -646,9 +649,14 @@ export default class MagicRoundabout {
     }
 
     if (preventInteraction) {
-      setTimeout(() => {
+      const delay = getComputedStyle(this.wrapper).transitionDelay
+      const delayFloat = parseFloat(delay) * 1000
+      const duration = getComputedStyle(this.wrapper).transitionDuration
+      const durationFloat = parseFloat(duration) * 1000
+
+      setTimeout(t => {
         this.transitioning = false
-      }, 1250)
+      }, delayFloat + durationFloat)
 
       return false
     }
@@ -836,11 +844,11 @@ export default class MagicRoundabout {
    */
   @bind
   isInViewport () {
-    const {top, left, bottom, right} = this.container.getBoundingClientRect()
+    const { top, left, bottom, right } = this.container.getBoundingClientRect()
 
     return top <= window.innerHeight &&
-           bottom >= 0 &&
-           left <= window.innerWidth &&
-           right >= 0
+      bottom >= 0 &&
+      left <= window.innerWidth &&
+      right >= 0
   }
 }
