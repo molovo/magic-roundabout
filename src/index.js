@@ -1,5 +1,6 @@
 import { bind } from 'decko'
 import Lethargy from './lethargy'
+import { animate } from './helpers'
 
 const lethargy = new Lethargy()
 
@@ -21,6 +22,8 @@ export default class MagicRoundabout {
     draggable: false,
     duplicateSlidesWhenLooping: false,
     duplicateSlidesCount: 1,
+    freeMode: false,
+    inertia: false,
     keys: true,
     limit: false,
     loop: true,
@@ -53,12 +56,33 @@ export default class MagicRoundabout {
   touch = null
 
   /**
+   * An array of previous movement events used for calculating inertia
+   *
+   * @type {Event[]}
+   */
+  movementEvents = []
+
+  /**
+   * Where intertia movement is currently in progress
+   *
+   * @type {boolean}
+   */
+  inertiaInProgress = false
+
+  /**
+   * The current offset, used during drag interaction
+   *
+   * @type {number}
+   */
+  offset = 0
+
+  /**
    * Create the slideshow instance
    *
    * @param {HTMLElement|string} target
    * @param {object} opts
    */
-  constructor (target, opts) {
+  constructor(target, opts) {
     if (typeof target === 'string') {
       this.container = document.querySelector(target)
 
@@ -74,6 +98,11 @@ export default class MagicRoundabout {
     this.opts = {
       ...this.opts,
       ...opts
+    }
+
+    if (this.opts.draggable && this.opts.freeMode) {
+      this.opts.loop = false
+      this.opts.limit = true
     }
 
     this.wrapper = this.container.querySelector('.slideshow__slides')
@@ -125,7 +154,7 @@ export default class MagicRoundabout {
    *
    * @return {Number}
    */
-  get current () {
+  get current() {
     return this._current + 1
   }
 
@@ -134,7 +163,7 @@ export default class MagicRoundabout {
    *
    * @param {Number} i
    */
-  set current (i) {
+  set current(i) {
     let fn
     clearTimeout(this.auto)
     i = parseInt(i)
@@ -194,7 +223,7 @@ export default class MagicRoundabout {
   /**
    * @return {HTMLElement}
    */
-  get currentSlide () {
+  get currentSlide() {
     if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
       if (this._current >= this.slides.length) {
         return this.duplicatesAppend[this._current - this.slides.length]
@@ -211,7 +240,7 @@ export default class MagicRoundabout {
   /**
    * @return {HTMLElement}
    */
-  get previousSlide () {
+  get previousSlide() {
     if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
       if (this._current - 1 >= this.slides.length) {
         return this.duplicatesAppend[this._current - this.slides.length - 1]
@@ -228,7 +257,7 @@ export default class MagicRoundabout {
   /**
    * @return {HTMLElement}
    */
-  get nextSlide () {
+  get nextSlide() {
     if (this.opts.loop && this.opts.duplicateSlidesWhenLooping) {
       if (this._current + 1 >= this.slides.length) {
         return this.duplicatesAppend[this._current - this.slides.length + 1]
@@ -250,7 +279,7 @@ export default class MagicRoundabout {
    * @param {Number} i
    */
   @bind
-  applyClasses (elements = [], i) {
+  applyClasses(elements = [], i) {
     if (elements.length === 0) {
       return
     }
@@ -299,7 +328,7 @@ export default class MagicRoundabout {
    * @param {Number} i
    */
   @bind
-  changeInstantly (i) {
+  changeInstantly(i) {
     // Prevent interaction to avoid the user navigating to a slide that does
     // not exist
     this.transitioning = true
@@ -329,7 +358,7 @@ export default class MagicRoundabout {
    * @param {NodeList|Array} slides
    */
   @bind
-  clearState (slides) {
+  clearState(slides) {
     requestAnimationFrame(t => {
       slides.forEach(slide => {
         slide.classList.remove('slideshow__slide--active')
@@ -343,7 +372,7 @@ export default class MagicRoundabout {
    * Register listeners to handle user interactions
    */
   @bind
-  registerListeners () {
+  registerListeners() {
     // Set the container size
     window.addEventListener('resize', this.setContainerSize)
 
@@ -360,6 +389,7 @@ export default class MagicRoundabout {
       this.container.addEventListener('mousemove', this.handleMouseMove)
       this.container.addEventListener('mouseup', this.handleMouseUp)
       this.container.addEventListener('mouseleave', this.handleMouseUp)
+      document.documentElement.addEventListener('mouseleave', this.handleMouseUp)
     }
 
     // Handle keyboard events
@@ -400,7 +430,7 @@ export default class MagicRoundabout {
    * Update the container width when the window resizes
    */
   @bind
-  setContainerSize () {
+  setContainerSize() {
     this.width = this.container.clientWidth
     this.transition()
   }
@@ -411,7 +441,7 @@ export default class MagicRoundabout {
    * @param {WheelEvent} e
    */
   @bind
-  handleScroll (e) {
+  handleScroll(e) {
     if (this.opts.vertical && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       return this.handleDeltaChange(e, e.deltaY, true)
     }
@@ -427,8 +457,10 @@ export default class MagicRoundabout {
    * @param {TouchEvent} e
    */
   @bind
-  handleTouchStart (e) {
-    this.touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  handleTouchStart(e) {
+    this.touch = { x: e.touches[0].clientX + this.offset, y: e.touches[0].clientY + this.offset }
+    this.offset = 0
+    this.movementStart = e.timeStamp
   }
 
   /**
@@ -437,7 +469,7 @@ export default class MagicRoundabout {
    * @param {MouseEvent} e
    */
   @bind
-  handleMouseDown (e) {
+  handleMouseDown(e) {
     e.touches = [{ clientX: e.clientX, clientY: e.clientY }]
     return this.handleTouchStart(e)
   }
@@ -446,15 +478,33 @@ export default class MagicRoundabout {
    * Handle touchend events on the container
    *
    * @param {TouchEvent} e
+   * @param {boolean}    bypassInertiaChecks
    */
   @bind
-  handleTouchMove (e) {
-    clearTimeout(this.touchEndHandler)
-
+  handleTouchMove(e, bypassInertiaChecks = false) {
     // If a touch hasn't been recorded, we can't calculate the distance,
     // so we ignore the movement
-    if (!this.touch) {
+    if (!this.touch || (!this.bypassInertiaChecks && this.inertiaInProgress)) {
       return
+    }
+
+    clearTimeout(this.touchEndHandler)
+
+    if (this.opts.draggable && this.opts.freeMode && this.opts.inertia) {
+      const lastEvent = this.movementEvents[this.movementEvents.length - 1]
+
+      let lastTimeStamp = this.movementStart
+      if (lastEvent) {
+        lastTimeStamp = lastEvent.timeStamp
+      }
+
+      if (e.timeStamp - lastTimeStamp > 40) {
+        this.movementEvents.push(e)
+
+        if (this.movementEvents.length > 2) {
+          this.movementEvents.shift()
+        }
+      }
     }
 
     // If there are multiple touches, ignore them so that we don't
@@ -512,13 +562,17 @@ export default class MagicRoundabout {
       if (Math.abs(distance) > threshold) {
         if (distance > 0) {
           this._current = this._current + 1
+          this.offset += threshold
         }
         if (distance < 0) {
           this._current = this._current - 1
+          this.offset -= threshold
         }
 
         this.touch.x = x
         this.touch.y = y
+
+        this.opts.onChange(this)
       }
     }
   }
@@ -529,7 +583,7 @@ export default class MagicRoundabout {
    * @param {MouseEvent} e
    */
   @bind
-  handleMouseMove (e) {
+  handleMouseMove(e) {
     e.touches = [{ clientX: e.clientX, clientY: e.clientY }]
     return this.handleTouchMove(e)
   }
@@ -540,7 +594,7 @@ export default class MagicRoundabout {
    * @param {TouchEvent|MouseEvent} e
    */
   @bind
-  handleTouchEnd (e) {
+  handleTouchEnd(e) {
     // If a touch hasn't been recorded, we can't calculate the distance,
     // so we ignore the movement
     if (!this.touch) {
@@ -553,24 +607,83 @@ export default class MagicRoundabout {
       return
     }
 
-    const x = e.touches[0].clientX
-    const y = e.touches[0].clientY
+    let x = e.touches[0].clientX
+    let y = e.touches[0].clientY
 
     const deltaX = this.touch.x - x
     const deltaY = this.touch.y - y
+    this.offset = 0
+
+    if (this.opts.draggable && this.opts.freeMode && this.opts.inertia && !this.inertiaInProgress) {
+      clearTimeout(this.inertiaHandlingTimeout)
+
+      this.inertiaInProgress = true
+
+      let lastTimeStamp = this.movementStart
+      if (this.movementEvents.length > 1) {
+        lastTimeStamp = this.movementEvents.shift().timeStamp
+      }
+
+      const time = e.timeStamp - lastTimeStamp
+
+      const speedX = deltaX / time
+      const speedY = deltaY / time
+
+      const duration = Math.max(Math.abs(speedX), Math.abs(speedY)) * 2000
+
+      // Reset the inertia progress state after 2.5s in case something goes wrong
+      this.inertiaHandlingTimeout = setTimeout(t => {
+        this.inertiaInProgress = false
+        this.touch = null
+        this.movementStart = null
+      }, duration)
+
+      if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
+        const end = y - ((speedY * duration) / 16)
+        animate(y, end, duration, newY => {
+          e.touches[0].clientY = newY
+          this.handleTouchMove(e, true)
+
+          if (newY === end) {
+            this.inertiaInProgress = false
+            this.touch = null
+            this.movementStart = null
+          }
+        })
+      }
+
+      if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
+        const end = x - ((speedX * duration) / 16)
+        animate(x, end, duration, newX => {
+          e.touches[0].clientX = newX
+          this.handleTouchMove(e, true)
+
+          if (newX === end) {
+            this.inertiaInProgress = false
+            this.touch = null
+            this.movementStart = null
+          }
+        })
+      }
+
+      return
+    }
 
     this.touch = null
+    this.movementStart = null
 
     // Reset transition timing
     this.wrapper.style.transitionDelay = null
     this.wrapper.style.transitionDuration = null
 
-    if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
-      return this.handleDeltaChange(e, deltaY, false)
-    }
+    if (!(this.opts.draggable && this.opts.freeMode)) {
+      if (this.opts.vertical && Math.abs(deltaY) > Math.abs(deltaX)) {
+        return this.handleDeltaChange(e, deltaY, false)
+      }
 
-    if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
-      return this.handleDeltaChange(e, deltaX, false)
+      if (!this.opts.vertical && Math.abs(deltaX) > Math.abs(deltaY)) {
+        return this.handleDeltaChange(e, deltaX, false)
+      }
     }
   }
 
@@ -580,7 +693,7 @@ export default class MagicRoundabout {
    * @param {MouseEvent} e
    */
   @bind
-  handleMouseUp (e) {
+  handleMouseUp(e) {
     e.touches = [{ clientX: e.clientX, clientY: e.clientY }]
     return this.handleTouchEnd(e)
   }
@@ -593,7 +706,7 @@ export default class MagicRoundabout {
    * @param {Boolean} preventInteraction
    */
   @bind
-  handleDeltaChange (e, distance, preventInteraction = false) {
+  handleDeltaChange(e, distance, preventInteraction = false) {
     if (lethargy.check(e, this.opts.vertical) === false || this.transitioning) {
       e.stopPropagation()
       e.preventDefault()
@@ -676,7 +789,7 @@ export default class MagicRoundabout {
    * @param {KeyboardEvent} e
    */
   @bind
-  handleKeypress (e) {
+  handleKeypress(e) {
     if (!this.isInViewport()) {
       return
     }
@@ -717,7 +830,7 @@ export default class MagicRoundabout {
    * @return Number
    */
   @bind
-  getTransitionOffset () {
+  getTransitionOffset(additionalOffset = 0) {
     const size = this.opts.vertical ? this.getOuterHeight : this.getOuterWidth
     const innerSize = this.opts.vertical ? this.getInnerHeight : this.getInnerWidth
 
@@ -740,6 +853,8 @@ export default class MagicRoundabout {
     if (this.opts.center && !this.opts.limit) {
       offset = offset + (size(this.container) / 2) - (innerSize(this.slides[this._current]) / 2)
     }
+
+    offset += additionalOffset
 
     if (this.opts.limit && !this.opts.loop) {
       let total = 0
@@ -765,10 +880,13 @@ export default class MagicRoundabout {
    * Transition to the current slide
    */
   @bind
-  transition () {
+  transition() {
     const axis = this.opts.vertical ? 'translateY' : 'translateX'
 
     this.wrapper.style.transform = `${axis}(${this.getTransitionOffset()}px)`
+
+    // Reset offset after a transition if performed
+    this.offset = 0
   }
 
   /**
@@ -777,12 +895,13 @@ export default class MagicRoundabout {
    * @param {Number} distance
    */
   @bind
-  offsetTransition (distance) {
+  offsetTransition(distance) {
+    this.offset = distance
     const axis = this.opts.vertical ? 'translateY' : 'translateX'
     this.wrapper.style.transitionDelay = '0s'
     this.wrapper.style.transitionDuration = '0s'
 
-    this.wrapper.style.transform = `${axis}(${this.getTransitionOffset() - distance}px)`
+    this.wrapper.style.transform = `${axis}(${this.getTransitionOffset(this.offset)}px)`
   }
 
   /**
@@ -793,7 +912,7 @@ export default class MagicRoundabout {
    * @return {Number}
    */
   @bind
-  getOuterWidth (el) {
+  getOuterWidth(el) {
     const style = window.getComputedStyle(el)
 
     return this.getInnerWidth(el) + parseFloat(style.marginLeft) + parseFloat(style.marginRight)
@@ -807,7 +926,7 @@ export default class MagicRoundabout {
    * @return {Number}
    */
   @bind
-  getOuterHeight (el) {
+  getOuterHeight(el) {
     const style = window.getComputedStyle(el)
 
     return this.getInnerHeight(el) + parseFloat(style.marginTop) + parseFloat(style.marginBottom)
@@ -821,7 +940,7 @@ export default class MagicRoundabout {
    * @return {Number}
    */
   @bind
-  getInnerWidth (el) {
+  getInnerWidth(el) {
     return parseFloat(el.getBoundingClientRect().width)
   }
 
@@ -833,7 +952,7 @@ export default class MagicRoundabout {
    * @return {Number}
    */
   @bind
-  getInnerHeight (el) {
+  getInnerHeight(el) {
     return parseFloat(el.getBoundingClientRect().height)
   }
 
@@ -843,7 +962,7 @@ export default class MagicRoundabout {
    * @return {Boolean}
    */
   @bind
-  isInViewport () {
+  isInViewport() {
     const { top, left, bottom, right } = this.container.getBoundingClientRect()
 
     return top <= window.innerHeight &&
