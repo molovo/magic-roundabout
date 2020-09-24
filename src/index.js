@@ -1,8 +1,6 @@
 import { bind } from 'decko'
 import Lethargy from './lethargy'
 
-const lethargy = new Lethargy()
-
 /**
  * A tiny JavaScript carousel
  */
@@ -593,7 +591,8 @@ export default class MagicRoundabout {
    * @param {Boolean} preventInteraction
    */
   @bind
-  handleDeltaChange (e, distance, preventInteraction = false) {
+  handleDeltaChange(e, distance, preventInteraction = false) {
+    const lethargy = new Lethargy()
     if (lethargy.check(e, this.opts.vertical) === false || this.transitioning) {
       e.stopPropagation()
       e.preventDefault()
